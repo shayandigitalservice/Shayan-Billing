@@ -1,697 +1,224 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shayan POS - Professional Billing & Stock</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shayan Smart POS - Master</title>
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#6366f1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="logo1.png">
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('App Ready'))
-            .catch(err => console.error('Error', err));
-        });
-      }
-    </script>
+    <style>
+        /* Aapka Purana Design aur Color */
+        :root { --accent: #6366f1; --bg: #f8fafc; --text: #0f172a; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; }
+        .hidden { display: none !important; }
+        
+        /* Shop Header Card */
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; position: relative; }
+        .edit-gear { position: absolute; top: 15px; right: 15px; cursor: pointer; font-size: 20px; opacity: 0.7; }
+        
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: white; margin-top: 5px; }
+        .btn-blue { background: var(--accent); }
+        .btn-green { background: #10b981; }
+        .btn-red { background: #ef4444; }
 
-
-<style>
-/* --- PROFESSIONAL UI (MODERN DESIGN) --- */
-:root {
-    --accent: #6366f1;
-    --bg: #f8fafc;
-    --glass: rgba(255, 255, 255, 0.95);
-    --text: #0f172a;
-    --blue-btn: #2563eb;
-}
-
-body { font-family: 'Inter', Arial, sans-serif; background: var(--bg); margin: 0; color: var(--text); padding: 10px; }
-.content-wrapper { width: 95%; max-width: 500px; margin: 40px auto; }
-h1 { text-align: center; background: linear-gradient(to right, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-.step-card { background: var(--glass); padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }
-input, select { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; box-sizing: border-box; outline: none; }
-
-.btn-blue { width: 100%; padding: 12px; border-radius: 6px; border: none; background: var(--blue-btn); color: white; font-size: 15px; font-weight: 500; cursor: pointer; margin: 5px 0; transition: 0.2s; }
-.btn-blue:hover { opacity: 0.9; }
-
-.btn-primary { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--accent); color: white; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-
-.plan-item { background: white; padding: 15px; border-radius: 16px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 10px; transition: 0.2s; text-align: left; }
-.plan-price { font-weight: 800; color: #10b981; }
-
-#admin-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 9999; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-.admin-box { background: #f1f5f9; padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--accent); }
-
-/* --- BILLING UI CONTAINER --- */
-.billing-ui-container { max-width: 800px; margin: auto; background: #ffffff; padding: 5px; }
-.billing-ui-container h2 { text-align: center; margin-bottom: 15px; font-size: 24px; }
-table { width: 100%; margin-top: 10px; border-collapse: collapse; }
-th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: center; }
-.totalRow td { font-weight: bold; }
-.bill { margin-top: 20px; overflow-wrap: break-word; word-wrap: break-word; border: 1px dashed #ccc; padding: 10px; }
-.invoice { float: right; }
-.clear { clear: both; }
-.qr-container { text-align: center; margin-top: 15px; padding: 10px; border: 1px dashed #ccc; }
-.qr-container img { width: 150px; height: 150px; }
-.hidden { display: none !important; }
-.status-badge { display: inline-block; padding: 5px 12px; background: #dcfce7; color: #166534; border-radius: 10px; font-size: 12px; font-weight: 700; }
-.table-wrapper { overflow-x: auto; width: 100%; margin-bottom: 10px; }
-
-/* Current Total Box Style */
-.current-total-box {
-    background: #f0f4ff;
-    border: 1px solid #6366f1;
-    border-radius: 12px;
-    padding: 15px;
-    margin: 15px 0;
-    text-align: center;
-    font-size: 20px;
-    font-weight: bold;
-    color: #0f172a;
-}
-
-/* Sale Summary Cards */
-.sale-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px; margin-bottom: 15px; }
-.sale-card { background: #f1f5f9; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; }
-.sale-card span { display: block; font-size: 11px; color: #64748b; font-weight: bold; }
-.sale-card b { font-size: 13px; color: #0f172a; }
-
-@media screen and (max-width:600px){
-  table th, table td { padding: 6px; font-size: 12px; }
-  .invoice { float: none; text-align: right; }
-}
-</style>
+        /* Admin Panel Overlay */
+        #admin-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 10000; display: none; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: center; font-size: 13px; }
+        .total-box { background: #eef2ff; padding: 15px; border-radius: 10px; text-align: center; font-size: 22px; font-weight: bold; color: var(--accent); margin: 15px 0; }
+    </style>
 </head>
 <body>
 
-<div id="auth-flow" class="content-wrapper">
-    <h1>Shayan Smart Billing</h1>
-    
-    <div id="step-mpin-login" class="step-card hidden">
-        <h3>Login</h3>
-        <input id="inputMPIN" type="password" maxlength="4" placeholder="Enter 4-Digit MPIN" style="text-align:center;">
-        <button class="btn-primary" onclick="loginWithMPIN()">Unlock</button>
-        <p onclick="forgotMPINFlow()" style="font-size: 11px; color: blue; cursor: pointer; margin-top: 10px;">Forgot MPIN? Reset using ID & Key</p>
-    </div>
+<script>
+    // Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDzUtrDvUpxqsrwZ4O-SGJo6HnGdH89ewU",
+        authDomain: "shayan-smart-pos.firebaseapp.com",
+        projectId: "shayan-smart-pos",
+        storageBucket: "shayan-smart-pos.firebasestorage.app",
+        messagingSenderId: "1097871545066",
+        appId: "1:1097871545066:web:20b112b0ae98ac2264bd93",
+        databaseURL: "https://shayan-smart-pos-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+</script>
 
-    <div id="step-mpin-reset" class="step-card hidden">
-        <h3>Reset MPIN</h3>
-        <input id="resetAppID" placeholder="Enter Approval ID">
-        <input id="resetKey" placeholder="Enter Subscription Key">
-        <input id="newMPIN" type="password" maxlength="4" placeholder="Enter New 4-Digit MPIN" style="text-align:center;">
-        <button class="btn-primary" onclick="resetMPIN()">Reset & Login</button>
+<div id="auth-section" class="card" style="max-width:400px; margin: 50px auto;">
+    <h2 style="text-align:center;">Shayan Smart POS</h2>
+    <div id="reg-form">
+        <input id="regName" placeholder="Owner Name" oninput="checkAdmin(this.value)">
+        <input id="regMob" type="number" placeholder="Mobile Number">
+        <button class="btn btn-blue" onclick="handleRegister()">Register & Request Access</button>
     </div>
-
-    <div id="step-reg" class="step-card">
-        <h3>User Verification</h3>
-        <p style="font-size: 11px; color: gray;">(Enter Your Details Properly)</p>
-        <input id="uName" placeholder="Business Owner Name" oninput="checkAdminFlow(this.value)">
-        <input id="uAddr" placeholder="Shop Address">
-        <input id="uMob" type="number" placeholder="WhatsApp Number">
-        <button class="btn-primary" onclick="requestActivation()">Verify & Request ID</button>
-    </div>
-    <div id="step-lock" class="step-card hidden">
-        <div style="background:#fef3c7; color:#b45309; padding:10px; border-radius:10px; font-size:12px; font-weight:700; margin-bottom:15px;">Awaiting Approval</div>
-        <p>Details sent to Distributor.<br><b>Contact: 9957548361</b></p>
-        <input id="inputApprovalID" placeholder="Enter Approval ID" style="text-align:center; font-weight:800; letter-spacing: 2px;">
-        <button class="btn-primary" onclick="verifyApprovalID()">Verify ID</button>
-    </div>
-    <div id="step-plans" class="step-card hidden">
-        <h3>Choose Your Plan</h3>
-        <div class="plan-item" onclick="selectPlan('trial', 7, 'Free Trial', 0)"><div><b>Free Trial</b><br><small>7 Days Full Access</small></div><b class="plan-price">FREE</b></div>
-        <div class="plan-item" onclick="selectPlan('premium', 30, 'Monthly', 99)"><div><b>Monthly</b><br><small>30 Days Premium</small></div><b class="plan-price">₹99</b></div>
-        <div class="plan-item" onclick="selectPlan('premium', 90, 'Quaterly', 299)"><div><b>Quaterly</b><br><small>90 Days Premium</small></div><b class="plan-price">₹299</b></div>
-        <div class="plan-item" onclick="selectPlan('premium', 180, 'Half yearly', 599)"><div><b>Half Yearly</b><br><small>180 Days Premium</small></div><b class="plan-price">₹599</b></div>
-        <div classs="plan-item" onclick="selectPlan('premium', 365, 'Yearly', 999)"><div><b>Yearly</b><br><small>365 Days Business</small></div><b class="plan-price">₹999</b></div>
-    </div>
-    <div id="step-payment" class="step-card hidden">
-        <p>Scan to Pay: <b id="pay-amount" style="color:var(--accent)"></b></p>
-        <div id="qr-display" style="background:#fff; padding:15px; display:inline-block; border-radius:20px; border:1px solid #eee;"></div>
-        <button class="btn-primary" style="background:#22c55e;" onclick="sendPaymentWA()">Send Screenshot</button>
-        <input id="inputSubKey" placeholder="Enter Key" style="text-align:center; font-weight:800;">
-        <button class="btn-primary" onclick="verifySubKey()">Complete Subscription</button>
-    </div>
-
-    <div id="step-set-mpin" class="step-card hidden">
-        <h3>Set Security MPIN</h3>
-        <p>Choose a 4-digit PIN for future logins</p>
-        <input id="setupMPIN" type="password" maxlength="4" placeholder="••••" style="text-align:center; font-size: 20px;">
-        <button class="btn-primary" onclick="finishMPINSetup()">Save & Start</button>
+    <div id="lock-form" class="hidden">
+        <p style="text-align:center; color:orange;">Account Pending Approval...</p>
+        <input id="unlockID" placeholder="Enter Approval ID" style="text-align:center;">
+        <button class="btn btn-blue" onclick="handleUnlock()">Activate App</button>
     </div>
 </div>
 
 <div id="admin-panel">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-        <h2 style="margin:0; color:var(--accent);">🛠 Admin Panel</h2>
-        <button onclick="closeAdmin()" style="background:red; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;">Exit</button>
+    <div style="display:flex; justify-content:space-between;">
+        <h2>🛠 Admin Control</h2>
+        <button onclick="closeAdmin()" class="btn-red" style="width:auto; padding:5px 15px;">Close</button>
     </div>
-    <div class="admin-box" style="margin-top: 20px;">
-        <h3>1. Generate Approval ID</h3>
-        <input id="admMob1" placeholder="User Mobile Number">
-        <button onclick="admGenApproval()" style="background:#4f46e5; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%;">Generate ID</button>
-        <p id="admShowID" style="font-weight:bold; color:blue; text-align:center;"></p>
+    <div class="card" style="background:#f1f5f9;">
+        <input id="targetMob" placeholder="Enter User Mobile">
+        <button class="btn btn-blue" onclick="approveUser()">Approve & Send ID via WA</button>
+        <button class="btn" style="background:orange;" onclick="suspendUser(true)">Suspend (Block)</button>
+        <button class="btn btn-green" onclick="suspendUser(false)">Activate (Unblock)</button>
     </div>
-    <div class="admin-box">
-        <h3>2. Generate Subscription Key</h3>
-        <input id="admMob2" placeholder="User Mobile Number">
-        <select id="admPlanDays">
-            <option value="30">1 Month (99)</option>
-            <option value="90">3 Month (299)</option>
-            <option value="180">6 Month (599)</option>
-            <option value="365">1 Year (999)</option>
-        </select>
-        <button onclick="admGenKey()" style="background:#10b981; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%;">Generate Key</button>
-        <p id="admShowKey" style="font-weight:bold; color:green; text-align:center;"></p>
-    </div>
-    <div class="admin-box">
-        <h3>3. User Control & Details</h3>
-        <input id="admSearchMob" placeholder="Enter User Mobile Number">
-        <button onclick="admSearchUser()" style="background:#2563eb; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%; margin-bottom:5px;">Show Details</button>
-        <button onclick="admSuspendUser()" style="background:#ef4444; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%; margin-bottom:5px;">Suspend User</button>
-        <button onclick="admActivateUser()" style="background:#22c55e; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%;">Activate User</button>
-        <div id="admUserDetails" style="margin-top:10px; font-size:12px; background:#fff; padding:10px; border-radius:8px; display:none;"></div>
-    </div>
+    <div id="user-list-area"></div>
 </div>
 
-<div id="main-billing" class="billing-ui-container hidden">
-    <div style="text-align:right;"><span id="timer-badge" class="status-badge"></span></div>
-    <h2>🧾 Bill Generator</h2>
+<div id="main-app" class="hidden">
+    
+    <div class="card">
+        <div class="edit-gear" onclick="showShopForm()">⚙️</div>
+        
+        <div id="shop-display" class="hidden">
+            <h2 id="d-name" style="margin:0; color:var(--accent);">Shop Name</h2>
+            <p id="d-addr" style="margin:5px 0; font-size:12px;">Address</p>
+            <p id="d-phone" style="margin:0; font-weight:bold;">Phone: 000</p>
+        </div>
 
-    <input id="shop" placeholder="Shop Name">
-    <input id="address" placeholder="Address">
-    <input id="phone" placeholder="Phone">
-    <input id="upiId" placeholder="Enter Your UPI ID (e.g. name@upi)">
-    <button id="saveShopBtn" class="btn-blue">Save Shop Details</button>
+        <div id="shop-entry-form">
+            <h3>Shop Details</h3>
+            <input id="s-name" placeholder="Shop Name">
+            <input id="s-addr" placeholder="Address">
+            <input id="s-phone" placeholder="Phone Number">
+            <input id="s-upi" placeholder="UPI ID (for QR)">
+            <button class="btn btn-blue" onclick="saveShop()">Save & Hide</button>
+        </div>
+    </div>
 
-    <input id="customer" placeholder="Customer Name">
-    <input id="productSearch" placeholder="Search Product">
-    <select id="productDropdown"></select>
+    <div class="card">
+        <input id="cName" placeholder="Customer Name">
+        <div style="display:flex; gap:5px;">
+            <input id="pName" placeholder="Item Name" style="flex:2;">
+            <input id="pQty" type="number" placeholder="Qty" style="flex:1;">
+            <input id="pPrice" type="number" placeholder="Price" style="flex:1;">
+        </div>
+        <button class="btn btn-green" onclick="addBillItem()">+ Add Item</button>
+    </div>
 
-    <input id="qty" type="number" placeholder="Qty">
-    <input id="price" type="number" placeholder="Price">
-    <button id="addItemBtn" class="btn-blue">Add Item</button>
-
-    <div class="table-wrapper">
-        <table id="table">
-            <tr><th>No</th><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-            <tbody id="tableBody"></tbody>
+    <div class="card">
+        <table>
+            <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+            <tbody id="billTable"></tbody>
         </table>
+        <div class="total-box">Total: ₹<span id="gTotal">0</span></div>
+        <button class="btn btn-blue" onclick="printReceipt()">Print Receipt</button>
+        <button class="btn" style="background:#64748b; margin-top:10px;" onclick="alert('Stock System Open')">Manage Stock</button>
     </div>
-
-    <div class="current-total-box">
-        Current Total: ₹<span id="liveCurrentTotal">0</span>
-    </div>
-
-    <input id="amtPaid" type="number" placeholder="Enter Amount Paid by Customer">
-    <select id="payment">
-      <option value="Cash">Cash</option>
-      <option value="UPI">UPI</option>
-      <option value="Card">Card</option>
-    </select>
-
-    <button id="generateBillBtn" class="btn-blue" style="background:#2563eb;">Generate Bill</button>
-    <select id="printMode">
-        <option value="A4">Print A4</option>
-        <option value="Receipt" selected>Print Receipt</option>
-    </select>
-    <button id="printBillBtn" class="btn-blue">Print Bill</button>
-    <button id="sendWhatsAppBtn" class="btn-blue">Send WhatsApp</button>
-
-    <div id="bill" class="bill"></div>
-    
-    <button id="downloadHistoryBtn" class="btn-blue">Download History</button>
-    
-    <div class="sale-summary">
-        <div class="sale-card"><span>Today</span><b id="saleToday">₹0</b></div>
-        <div class="sale-card"><span>Weekly</span><b id="saleWeekly">₹0</b></div>
-        <div class="sale-card"><span>Monthly</span><b id="saleMonthly">₹0</b></div>
-    </div>
-
-    <hr style="margin:30px 0;">
-    <h2 style="display:flex; align-items:center; justify-content:center; gap:10px;">📦 Stock Management</h2>
-
-    <input id="stockProduct" placeholder="Product Name">
-    <input id="stockQty" type="number" placeholder="Quantity to Add">
-    <button id="addStockBtn" class="btn-blue">Add Stock</button>
-
-    <div class="table-wrapper">
-        <table id="stockTable">
-            <tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>
-        </table>
-    </div>
-
-    <button id="downloadStockBtn" class="btn-blue">Download Stock Excel</button>
-    
-    <button onclick="tempResetCheck()" class="btn-blue" style="background:#ef4444; margin-top:50px;">Logout (MPIN Lock)</button>
-    <p style="text-align:center; font-size:10px; color:gray;">(Tip: Click Logout 3x to Reset during testing)</p>
 </div>
 
 <script>
-const DIST_WA = "919957548361";
-const DIST_UPI = "9957548361@ybl";
+let items = []; let total = 0;
 
-// --- TEMPORARY RESET LOGIC ---
-let resetClickCount = 0;
-function tempResetCheck() {
-    resetClickCount++;
-    if(resetClickCount >= 3) {
-        if(confirm("Confirm Reset?")) { 
-            localStorage.clear();
+// Admin Password Logic
+function checkAdmin(v) {
+    if(v === "shayan@master") {
+        let p = prompt("Enter Master Key:");
+        if(p === "Muksidul#2026") { document.getElementById("admin-panel").style.display="block"; }
+    }
+}
+
+function closeAdmin() { document.getElementById("admin-panel").style.display="none"; }
+
+// Firebase Functions
+function handleRegister() {
+    let name = document.getElementById("regName").value;
+    let mob = document.getElementById("regMob").value;
+    if(!name || mob.length < 10) return alert("Sahi details bhariye");
+    db.ref('users/' + mob).set({ name, mob, status: "pending", suspended: false }).then(() => {
+        localStorage.setItem("user_mob", mob);
+        alert("Request Sent!");
+        document.getElementById("reg-form").classList.add("hidden");
+        document.getElementById("lock-form").classList.remove("hidden");
+    });
+}
+
+function handleUnlock() {
+    let mob = localStorage.getItem("user_mob");
+    let id = document.getElementById("unlockID").value;
+    db.ref('users/' + mob).once('value', (s) => {
+        if(s.val() && s.val().appID === id) {
+            localStorage.setItem("is_active", "true");
             location.reload();
-        }
-        resetClickCount = 0;
-    } else {
-        setTimeout(() => {
-           if(resetClickCount === 1) logoutToMPIN();
-           resetClickCount = 0;
-        }, 500);
-    }
+        } else { alert("Wrong ID"); }
+    });
 }
 
-// --- ADMIN SYSTEM ---
-function admSearchUser() {
-    let mob = document.getElementById("admSearchMob").value;
-    let data = JSON.parse(localStorage.getItem("user_db_" + mob));
-    let div = document.getElementById("admUserDetails");
+// Shop Details Hide/Show Logic
+function saveShop() {
+    let shop = {
+        name: document.getElementById("s-name").value,
+        addr: document.getElementById("s-addr").value,
+        phone: document.getElementById("s-phone").value,
+        upi: document.getElementById("s-upi").value
+    };
+    localStorage.setItem("shop_data", JSON.stringify(shop));
+    renderShop();
+}
+
+function renderShop() {
+    let data = JSON.parse(localStorage.getItem("shop_data"));
     if(data) {
-        div.style.display = "block";
-        div.innerHTML = `<b>Name:</b> ${data.name}<br><b>Address:</b> ${data.addr}<br><b>ID:</b> ${data.appID}<br><b>Key:</b> ${data.subKey}<br><b>Status:</b> ${data.suspended ? 'SUSPENDED' : 'ACTIVE'}<br><b>Reg Date:</b> ${data.regDate}`;
-    } else { alert("User not found!"); div.style.display = "none"; }
-}
-
-function admSuspendUser() {
-    let mob = document.getElementById("admSearchMob").value;
-    let data = JSON.parse(localStorage.getItem("user_db_" + mob));
-    if(data) {
-        data.suspended = true;
-        localStorage.setItem("user_db_" + mob, JSON.stringify(data));
-        alert("User Suspended Successfully!");
-    } else { alert("User not found!"); }
-}
-
-function admActivateUser() {
-    let mob = document.getElementById("admSearchMob").value;
-    let data = JSON.parse(localStorage.getItem("user_db_" + mob));
-    if(data) {
-        data.suspended = false;
-        localStorage.setItem("user_db_" + mob, JSON.stringify(data));
-        alert("User Activated Successfully!");
-    } else { alert("User not found!"); }
-}
-
-// --- MPIN LOGIC ---
-function logoutToMPIN() {
-    let auth = JSON.parse(localStorage.getItem("shayan_auth"));
-    if(auth) { auth.active = false; localStorage.setItem("shayan_auth", JSON.stringify(auth)); }
-    location.reload();
-}
-
-function loginWithMPIN() {
-    let pin = document.getElementById("inputMPIN").value;
-    let mob = localStorage.getItem("current_user_mob");
-    let userData = JSON.parse(localStorage.getItem("user_db_" + mob));
-    if(userData && userData.suspended) return alert("Your account is suspended. Contact Admin!");
-    if(pin === localStorage.getItem("user_mpin")) {
-        let auth = JSON.parse(localStorage.getItem("shayan_auth"));
-        auth.active = true;
-        localStorage.setItem("shayan_auth", JSON.stringify(auth));
-        location.reload();
-    } else { alert("Incorrect MPIN!"); }
-}
-
-function forgotMPINFlow() {
-    document.getElementById("step-mpin-login").classList.add("hidden");
-    document.getElementById("step-mpin-reset").classList.remove("hidden");
-}
-
-function resetMPIN() {
-    let id = document.getElementById("resetAppID").value;
-    let key = document.getElementById("resetKey").value;
-    let newPin = document.getElementById("newMPIN").value;
-    if(id === localStorage.getItem("temp_approval_id") && key === localStorage.getItem("temp_sub_key")) {
-        if(newPin.length === 4) {
-            localStorage.setItem("user_mpin", newPin);
-            alert("MPIN Reset Successful!");
-            location.reload();
-        } else { alert("Enter 4 digits!"); }
-    } else { alert("Invalid ID or Key!"); }
-}
-
-function finishMPINSetup() {
-    let pin = document.getElementById("setupMPIN").value;
-    if(pin.length === 4) {
-        localStorage.setItem("user_mpin", pin);
-        let days = localStorage.getItem("temp_plan_days");
-        activateSystem(days);
-    } else { alert("Enter 4-digit PIN"); }
-}
-
-function checkAdminFlow(val) {
-    if(val === "shayan@321") {
-        document.getElementById("admin-panel").style.display = "block";
-        document.getElementById("uName").value = "";
+        document.getElementById("shop-entry-form").classList.add("hidden");
+        document.getElementById("shop-display").classList.remove("hidden");
+        document.getElementById("d-name").innerText = data.name;
+        document.getElementById("d-addr").innerText = data.addr;
+        document.getElementById("d-phone").innerText = "Phone: " + data.phone;
     }
 }
-function closeAdmin() { document.getElementById("admin-panel").style.display = "none"; }
+function showShopForm() { document.getElementById("shop-entry-form").classList.toggle("hidden"); }
 
-function requestActivation() {
-    let name = document.getElementById("uName").value, addr = document.getElementById("uAddr").value, mob = document.getElementById("uMob").value;
-    if(!name || !addr || mob.length < 10) return alert("Details bhariye!");
-    let userData = { name, addr, mob, regDate: new Date().toLocaleString(), suspended: false };
-    localStorage.setItem("user_db_" + mob, JSON.stringify(userData));
-    localStorage.setItem("current_user_mob", mob);
-    window.open(`https://wa.me/${DIST_WA}?text=${encodeURIComponent("*Verification Request*\nName: "+name+"\nAddress: "+addr+"\nMobile: "+mob)}`);
-    document.getElementById("step-reg").classList.add("hidden");
-    document.getElementById("step-lock").classList.remove("hidden");
+// Billing Logic
+function addBillItem() {
+    let n = document.getElementById("pName").value, q = +document.getElementById("pQty").value, p = +document.getElementById("pPrice").value;
+    if(!n || !q || !p) return;
+    let t = q * p; total += t;
+    document.getElementById("billTable").innerHTML += `<tr><td>${n}</td><td>${q}</td><td>${p}</td><td>${t}</td></tr>`;
+    document.getElementById("gTotal").innerText = total;
 }
 
-function verifyApprovalID() {
-    let input = document.getElementById("inputApprovalID").value.trim();
-    let mob = localStorage.getItem("current_user_mob");
-    if(input === localStorage.getItem("temp_approval_id")) {
-        let userData = JSON.parse(localStorage.getItem("user_db_" + mob));
-        userData.appID = input;
-        localStorage.setItem("user_db_" + mob, JSON.stringify(userData));
-        document.getElementById("step-lock").classList.add("hidden");
-        document.getElementById("step-plans").classList.remove("hidden");
-    } else { alert("Invalid Approval ID!"); }
-}
+function printReceipt() { window.print(); }
 
-function selectPlan(type, days, name, price) {
-    localStorage.setItem("temp_plan_days", days);
-    if(type === 'trial') {
-        document.getElementById("step-plans").classList.add("hidden");
-        document.getElementById("step-set-mpin").classList.remove("hidden");
-    } else {
-        document.getElementById("pay-amount").innerText = "₹" + price;
-        let qr = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('upi://pay?pa='+DIST_UPI+'&am='+price+'&cu=INR')}`;
-        document.getElementById("qr-display").innerHTML = `<img src="${qr}">`;
-        document.getElementById("step-plans").classList.add("hidden");
-        document.getElementById("step-payment").classList.remove("hidden");
-    }
-}
-
-function sendPaymentWA() { window.open(`https://wa.me/${DIST_WA}?text=Payment%20Done.%20Please%20send%20my%20key.`); }
-
-function verifySubKey() {
-    let input = document.getElementById("inputSubKey").value.trim();
-    let mob = localStorage.getItem("current_user_mob");
-    if(input === localStorage.getItem("temp_sub_key")) {
-        let userData = JSON.parse(localStorage.getItem("user_db_" + mob));
-        userData.subKey = input;
-        localStorage.setItem("user_db_" + mob, JSON.stringify(userData));
-        document.getElementById("step-payment").classList.add("hidden");
-        document.getElementById("step-set-mpin").classList.remove("hidden");
-    } else { alert("Invalid Subscription Key!"); }
-}
-
-function activateSystem(days) {
-    let expiry = new Date().getTime() + (days * 24 * 60 * 60 * 1000);
-    localStorage.setItem("shayan_auth", JSON.stringify({active:true, exp:expiry}));
-    alert("Software Activated!");
-    location.reload();
-}
-
-function admGenApproval() {
-    let mob = document.getElementById("admMob1").value;
-    let id = "APP-" + Math.floor(1000 + Math.random() * 9999);
-    localStorage.setItem("temp_approval_id", id);
-    document.getElementById("admShowID").innerText = "Generated ID: " + id;
-    window.open(`https://wa.me/${mob}?text=Your%20Approval%20ID:%20${id}`);
-}
-
-function admGenKey() {
-    let mob = document.getElementById("admMob2").value;
-    let key = "KEY-" + Math.floor(1000 + Math.random() * 9999);
-    localStorage.setItem("temp_sub_key", key);
-    document.getElementById("admShowKey").innerText = "Generated Key: " + key;
-    window.open(`https://wa.me/${mob}?text=Your%20Subscription%20Key:%20${key}`);
-}
-
-document.addEventListener("DOMContentLoaded", function(){
-    let auth = JSON.parse(localStorage.getItem("shayan_auth"));
-    let mpin = localStorage.getItem("user_mpin");
-    let mob = localStorage.getItem("current_user_mob");
-    let userData = mob ? JSON.parse(localStorage.getItem("user_db_" + mob)) : null;
-
-    if(auth && mpin) {
-        if(userData && userData.suspended) {
-            document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>Your account has been SUSPENDED.<br>Contact Muksidul: 9957548361</h1>";
-            return;
-        }
-        if(auth.active && new Date().getTime() < auth.exp) {
-            document.getElementById("auth-flow").classList.add("hidden");
-            document.getElementById("main-billing").classList.remove("hidden");
-            let left = Math.ceil((auth.exp - new Date().getTime()) / (1000*60*60*24));
-            document.getElementById("timer-badge").innerText = left + " Days Remaining";
-            initBillingSystem();
-        } else {
-            document.getElementById("step-reg").classList.add("hidden");
-            document.getElementById("step-mpin-login").classList.remove("hidden");
-        }
-    }
-});
-
-// --- BILLING SYSTEM CORE ---
-function initBillingSystem() {
-    let items=[];
-    let total=0;
-    let liveTotal = 0; // Tracking live total for the UI box
-    let invoiceCounter = parseInt(localStorage.getItem("invoiceCounter"))||1;
-    let stock = JSON.parse(localStorage.getItem("stock"))||{};
-    let stockHistory = JSON.parse(localStorage.getItem("stockHistory"))||[];
-
-    const shopInput = document.getElementById("shop");
-    const addressInput = document.getElementById("address");
-    const phoneInput = document.getElementById("phone");
-    const upiInput = document.getElementById("upiId");
-    const saveShopBtn = document.getElementById("saveShopBtn");
-    const liveTotalDisplay = document.getElementById("liveCurrentTotal");
-
-    shopInput.value = localStorage.getItem("shop")||"";
-    addressInput.value = localStorage.getItem("address")||"";
-    phoneInput.value = localStorage.getItem("phone")||"";
-    upiInput.value = localStorage.getItem("upiId")||"";
-
-    saveShopBtn.addEventListener("click", function(){
-        localStorage.setItem("shop", shopInput.value);
-        localStorage.setItem("address", addressInput.value);
-        localStorage.setItem("phone", phoneInput.value);
-        localStorage.setItem("upiId", upiInput.value);
-        alert("Shop details saved!");
-    });
-
-    const stockProductInput = document.getElementById("stockProduct");
-    const stockQtyInput = document.getElementById("stockQty");
-    const addStockBtn = document.getElementById("addStockBtn");
-    const stockTable = document.getElementById("stockTable");
-
-    function renderStock(){
-        stockTable.innerHTML = `<tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>`;
-        for(let p in stock){
-            let updates = stockHistory.filter(h=>h.product===p);
-            let lastUpdate = updates[updates.length-1]?.date || "";
-            let color = stock[p]<=5 ? "red" : "green";
-            let row = stockTable.insertRow();
-            row.insertCell(0).innerHTML = p + (stock[p]<=5 ? " ⚠ Low Stock" : "");
-            row.insertCell(1).innerHTML = `<span style="color:${color}">${stock[p]}</span>`;
-            row.insertCell(2).innerText = lastUpdate ? new Date(lastUpdate).toLocaleString() : "-";
-        }
-    }
-    renderStock();
-
-    addStockBtn.addEventListener("click", function(){
-        let p = stockProductInput.value.trim();
-        let q = +stockQtyInput.value;
-        if(!p || !q){ alert("Fill all fields"); return; }
-        stock[p] = (stock[p] || 0) + q;
-        stockHistory.push({product:p, qtyAdded:q, type:"Added", date:new Date().toISOString()});
-        localStorage.setItem("stock", JSON.stringify(stock));
-        localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
-        stockProductInput.value=""; stockQtyInput.value="";
-        renderStock();
-        renderProductDropdown();
-    });
-
-    const productDropdown = document.getElementById("productDropdown");
-    const productSearch = document.getElementById("productSearch");
-
-    function renderProductDropdown(){
-        productDropdown.innerHTML = "";
-        let productList = [...new Set(Object.keys(stock))];
-        productList.forEach(p=>{
-            let option = document.createElement("option");
-            option.value = p; option.text = p;
-            productDropdown.appendChild(option);
+// Auth Check on Load
+window.onload = () => {
+    let mob = localStorage.getItem("user_mob");
+    if(mob) {
+        db.ref('users/' + mob).on('value', (s) => {
+            let u = s.val();
+            if(u && u.suspended) { document.body.innerHTML = "<h1>Blocked</h1>"; }
+            else if(localStorage.getItem("is_active") === "true") {
+                document.getElementById("auth-section").classList.add("hidden");
+                document.getElementById("main-app").classList.remove("hidden");
+                renderShop();
+            }
         });
     }
-    renderProductDropdown();
+};
 
-    productSearch.addEventListener("input", function(){
-        let val = this.value.toLowerCase();
-        let options = Array.from(productDropdown.options);
-        let match = options.find(o=>o.value.toLowerCase().includes(val));
-        if(match) productDropdown.value = match.value;
-    });
-
-    document.getElementById("downloadStockBtn").addEventListener("click", function(){
-        let html = `<table border="1"><tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>`;
-        for(let p in stock){
-            let updates = stockHistory.filter(h=>h.product===p);
-            let lastUpdate = updates[updates.length-1]?.date||"";
-            html += `<tr><td>${p}</td><td>${stock[p]}</td><td>${new Date(lastUpdate).toLocaleString()}</td></tr>`;
-        }
-        html += `</table>`;
-        let blob = new Blob([html], {type:"application/vnd.ms-excel"});
-        let a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "stock.xlsx";
-        a.click();
-    });
-
-    const qtyInput = document.getElementById("qty");
-    const priceInput = document.getElementById("price");
-    const addItemBtn = document.getElementById("addItemBtn");
-    const tableBody = document.getElementById("tableBody");
-
-    addItemBtn.addEventListener("click", function(){
-        let p = productDropdown.value.trim();
-        let q = +qtyInput.value;
-        let pr = +priceInput.value;
-        if(!p || !q || !pr){ alert("Fill all fields"); return; }
-        if(stock[p]===undefined){ alert("Product not in stock"); return; }
-        if(q>stock[p]){ alert(`Stock not sufficient for ${p}. Available: ${stock[p]}`); return; }
-
-        stock[p]-=q;
-        stockHistory.push({product:p, qtyAdded:-q, type:"Sold", date:new Date().toISOString()});
-        localStorage.setItem("stock", JSON.stringify(stock));
-        localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
-        renderStock();
-
-        let t = q*pr;
-        items.push({p,q,pr,t});
-        
-        // Update live total display
-        liveTotal += t;
-        liveTotalDisplay.innerText = liveTotal;
-
-        let row=tableBody.insertRow();
-        row.insertCell(0).innerText=items.length;
-        row.insertCell(1).innerText=p;
-        row.insertCell(2).innerText=q;
-        row.insertCell(3).innerText=pr;
-        row.insertCell(4).innerText=t;
-        productSearch.value=""; qtyInput.value=""; priceInput.value="";
-    });
-
-    function getInvoiceNumber(){ let num = invoiceCounter; invoiceCounter++; localStorage.setItem("invoiceCounter", invoiceCounter); return num; }
-
-    document.getElementById("generateBillBtn").addEventListener("click", function(){
-        if(items.length===0){ alert("Add items first"); return; }
-        let bill = document.getElementById("bill");
-        total=0; items.forEach(i=> total+=i.t);
-        
-        let paid = parseFloat(document.getElementById("amtPaid").value) || total;
-        let unpaid = total - paid;
-        if(unpaid < 0) unpaid = 0;
-
-        let invoiceNo = getInvoiceNumber();
-        let dateISO = new Date().toISOString();
-        let paymentMode = document.getElementById("payment").value;
-        let upiId = upiInput.value.trim();
-
-        let html=`<div class="invoice">Invoice No: ${invoiceNo}</div><div class="clear"></div>
-        <b>${shopInput.value}</b><br>${addressInput.value}<br>Phone: ${phoneInput.value}<br>
-        Date: ${new Date(dateISO).toLocaleString()}<br>
-        Customer: ${document.getElementById("customer").value}<br>
-        Payment Mode: ${paymentMode}<hr>
-        <div style="overflow-x:auto;"><table>
-        <tr><th>No</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>`;
-        items.forEach((i,index)=>{
-            html+=`<tr><td>${index+1}</td><td>${i.p}</td><td>${i.q}</td><td>${i.pr}</td><td>${i.t}</td></tr>`;
-        });
-        html+=`<tr class="totalRow"><td colspan="4">Grand Total</td><td>₹${total}</td></tr>`;
-        html+=`<tr class="totalRow" style="color:green;"><td colspan="4">Paid Amount</td><td>₹${paid}</td></tr>`;
-        html+=`<tr class="totalRow" style="color:red;"><td colspan="4">Unpaid Balance</td><td>₹${unpaid}</td></tr></table></div>`;
-        
-        if(upiId !== "" && paid > 0){
-            let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('upi://pay?pa='+upiId+'&pn='+shopInput.value+'&am='+paid+'&cu=INR')}`;
-            html += `<div class="qr-container"><p>Scan to Pay: ₹${paid}</p><img src="${qrUrl}" alt="UPI QR Code"></div>`;
-        }
-
-        bill.innerHTML = html;
-
-        let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
-        saleHistory.push({ invoiceNo, total, paid, unpaid, date: dateISO, customer: document.getElementById("customer").value, items: [...items] });
-        localStorage.setItem("saleHistory", JSON.stringify(saleHistory));
-
-        updateSaleSummary();
-        items = [];
-        tableBody.innerHTML = "";
-        document.getElementById("amtPaid").value = "";
-        
-        // Reset Live Total after generating bill
-        liveTotal = 0;
-        liveTotalDisplay.innerText = "0";
-    });
-
-    document.getElementById("printBillBtn").addEventListener("click", function(){
-        let content = document.getElementById("bill").innerHTML;
-        if(!content) return alert("Generate bill first");
-        let mode = document.getElementById("printMode").value;
-        let width=400, height=700;
-        if(mode=="A4"){width=800;height=1100;}
-        let win = window.open('','',`width=${width},height=${height}`);
-        win.document.write(`<html><head><title>Print Bill</title><style>
-        body{font-family:monospace;padding:10px;text-align:center;} table{width:100%;border-collapse:collapse;} td,th{border:1px solid #000;padding:5px;text-align:center;} .totalRow td{font-weight:bold;} .invoice{float:right;} .clear{clear:both;} .qr-container{margin-top:10px;} .qr-container img{width:120px;}
-        </style></head><body>${content}</body></html>`);
-        win.document.close(); win.print();
-    });
-
-    document.getElementById("sendWhatsAppBtn").addEventListener("click", function(){
-        let text="🧾 BILL RECEIPT\n\n"+document.getElementById("bill").innerText;
-        window.open("https://wa.me/?text="+encodeURIComponent(text));
-    });
-
-    document.getElementById("downloadHistoryBtn").addEventListener("click", function(){
-        let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
-        if(saleHistory.length === 0) return alert("No history found");
-        let html = `<table border="1"><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Total</th><th>Paid</th><th>Unpaid</th></tr>`;
-        saleHistory.forEach(s => {
-            html += `<tr><td>${new Date(s.date).toLocaleDateString()}</td><td>${s.invoiceNo}</td><td>${s.customer}</td><td>${s.total}</td><td>${s.paid}</td><td>${s.unpaid}</td></tr>`;
-        });
-        html += `</table>`;
-        let blob = new Blob([html], {type:"application/vnd.ms-excel"});
-        let a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "Sale_History.xlsx"; a.click();
-    });
-
-    function updateSaleSummary(){
-        let history = JSON.parse(localStorage.getItem("saleHistory")) || [];
-        let today = new Date();
-        let tTotal = 0, wTotal = 0, mTotal = 0;
-        history.forEach(s => {
-            let sDate = new Date(s.date);
-            if(sDate.toDateString() === today.toDateString()) tTotal += s.total;
-            let diffDays = Math.ceil(Math.abs(today - sDate) / (1000 * 60 * 60 * 24));
-            if(diffDays <= 7) wTotal += s.total;
-            if(sDate.getMonth() === today.getMonth() && sDate.getFullYear() === today.getFullYear()) mTotal += s.total;
-        });
-        document.getElementById("saleToday").innerText = "₹" + tTotal;
-        document.getElementById("saleWeekly").innerText = "₹" + wTotal;
-        document.getElementById("saleMonthly").innerText = "₹" + mTotal;
-    }
-    updateSaleSummary();
+// Admin Commands
+function approveUser() {
+    let m = document.getElementById("targetMob").value;
+    let id = "ID-" + Math.floor(1000 + Math.random()*9000);
+    db.ref('users/'+m).update({appID: id, status: 'active'});
+    alert("Approved! ID: " + id);
+    window.open(`https://wa.me/${m}?text=ID:${id}`);
+}
+function suspendUser(state) {
+    let m = document.getElementById("targetMob").value;
+    db.ref('users/'+m).update({suspended: state});
 }
 </script>
 </body>
-      </html>
+</html>
