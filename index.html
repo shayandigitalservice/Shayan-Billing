@@ -110,7 +110,6 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
     <div id="step-mpin-reset" class="step-card hidden">
         <h3>Reset MPIN</h3>
         <input id="resetAppID" placeholder="Enter Approval ID">
-        <input id="resetKey" placeholder="Enter Subscription Key">
         <input id="newMPIN" type="password" maxlength="4" placeholder="Enter New 4-Digit MPIN" style="text-align:center;">
         <button class="btn-primary" onclick="resetMPIN()">Reset & Login</button>
     </div>
@@ -131,18 +130,8 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
     </div>
     <div id="step-plans" class="step-card hidden">
         <h3>Choose Your Plan</h3>
-        <div class="plan-item" onclick="selectPlan('trial', 7, 'Free Trial', 0)"><div><b>Free Trial</b><br><small>7 Days Full Access</small></div><b class="plan-price">FREE</b></div>
-        <div class="plan-item" onclick="selectPlan('premium', 30, 'Monthly', 99)"><div><b>Monthly</b><br><small>30 Days Premium</small></div><b class="plan-price">₹99</b></div>
-        <div class="plan-item" onclick="selectPlan('premium', 90, 'Quaterly', 299)"><div><b>Quaterly</b><br><small>90 Days Premium</small></div><b class="plan-price">₹299</b></div>
-        <div class="plan-item" onclick="selectPlan('premium', 180, 'Half yearly', 599)"><div><b>Half Yearly</b><br><small>180 Days Premium</small></div><b class="plan-price">₹599</b></div>
-        <div classs="plan-item" onclick="selectPlan('premium', 365, 'Yearly', 999)"><div><b>Yearly</b><br><small>365 Days Business</small></div><b class="plan-price">₹999</b></div>
-    </div>
-    <div id="step-payment" class="step-card hidden">
-        <p>Scan to Pay: <b id="pay-amount" style="color:var(--accent)"></b></p>
-        <div id="qr-display" style="background:#fff; padding:15px; display:inline-block; border-radius:20px; border:1px solid #eee;"></div>
-        <button class="btn-primary" style="background:#22c55e;" onclick="sendPaymentWA()">Send Screenshot</button>
-        <input id="inputSubKey" placeholder="Enter Key" style="text-align:center; font-weight:800;">
-        <button class="btn-primary" onclick="verifySubKey()">Complete Subscription</button>
+        <div class="plan-item" onclick="selectPlan('trial', 7)"><div><b>Free Trial</b><br><small>7 Days Full Access</small></div><b class="plan-price">FREE</b></div>
+        <div class="plan-item" onclick="selectPlan('premium', 365)"><div><b>Yearly</b><br><small>365 Days Business</small></div><b class="plan-price">₹999</b></div>
     </div>
 
     <div id="step-set-mpin" class="step-card hidden">
@@ -165,19 +154,7 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
         <p id="admShowID" style="font-weight:bold; color:blue; text-align:center;"></p>
     </div>
     <div class="admin-box">
-        <h3>2. Generate Subscription Key</h3>
-        <input id="admMob2" placeholder="User Mobile Number">
-        <select id="admPlanDays">
-            <option value="30">1 Month (99)</option>
-            <option value="90">3 Month (299)</option>
-            <option value="180">6 Month (599)</option>
-            <option value="365">1 Year (999)</option>
-        </select>
-        <button onclick="admGenKey()" style="background:#10b981; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%;">Generate Key</button>
-        <p id="admShowKey" style="font-weight:bold; color:green; text-align:center;"></p>
-    </div>
-    <div class="admin-box">
-        <h3>3. User Control & Details</h3>
+        <h3>2. User Control & Details</h3>
         <input id="admSearchMob" placeholder="Enter User Mobile Number">
         <button onclick="admSearchUser()" style="background:#2563eb; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%; margin-bottom:5px;">Show Details</button>
         <button onclick="admSuspendUser()" style="background:#ef4444; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; width:100%; margin-bottom:5px;">Suspend User</button>
@@ -268,11 +245,9 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
     <button id="downloadStockBtn" class="btn-blue">Download Stock Excel</button>
     
     <button onclick="tempResetCheck()" class="btn-blue" style="background:#ef4444; margin-top:50px;">Logout (MPIN Lock)</button>
-    <p style="text-align:center; font-size:10px; color:gray;">(Tip: Click Logout 3x to Reset during testing)</p>
 </div>
 
 <script>
-// --- FIREBASE INITIALIZATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyDzUtrDvUpxqsrwZ4O-SGJo6HnGdH89ewU",
     authDomain: "shayan-smart-pos.firebaseapp.com",
@@ -286,9 +261,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const DIST_WA = "919957548361";
-const DIST_UPI = "9957548361@ybl";
 
-// --- SHOP HIDE/SHOW FUNCTIONS ---
 function toggleShopForm() {
     document.getElementById("shop-form").classList.toggle("hidden");
     document.getElementById("shop-display").classList.toggle("hidden");
@@ -305,25 +278,17 @@ function loadShopDisplay() {
     }
 }
 
-// --- TEMPORARY RESET LOGIC ---
 let resetClickCount = 0;
 function tempResetCheck() {
     resetClickCount++;
     if(resetClickCount >= 3) {
-        if(confirm("Confirm Reset?")) { 
-            localStorage.clear();
-            location.reload();
-        }
+        if(confirm("Confirm Reset?")) { localStorage.clear(); location.reload(); }
         resetClickCount = 0;
     } else {
-        setTimeout(() => {
-           if(resetClickCount === 1) logoutToMPIN();
-           resetClickCount = 0;
-        }, 500);
+        setTimeout(() => { if(resetClickCount === 1) logoutToMPIN(); resetClickCount = 0; }, 500);
     }
 }
 
-// --- ADMIN SYSTEM ---
 function admSearchUser() {
     let mob = document.getElementById("admSearchMob").value;
     db.ref('users/' + mob).once('value', (snap) => {
@@ -331,22 +296,21 @@ function admSearchUser() {
         let div = document.getElementById("admUserDetails");
         if(data) {
             div.style.display = "block";
-            div.innerHTML = `<b>Name:</b> ${data.name}<br><b>Address:</b> ${data.addr}<br><b>ID:</b> ${data.appID || 'Not Issued'}<br><b>Status:</b> ${data.suspended ? 'SUSPENDED' : 'ACTIVE'}<br><b>Reg Date:</b> ${data.regDate}`;
-        } else { alert("User not found!"); div.style.display = "none"; }
+            div.innerHTML = `<b>Name:</b> ${data.name}<br><b>ID:</b> ${data.appID || 'Pending'}<br><b>Status:</b> ${data.suspended ? 'BLOCKED' : 'ACTIVE'}`;
+        } else { alert("User not found!"); }
     });
 }
 
 function admSuspendUser() {
     let mob = document.getElementById("admSearchMob").value;
-    db.ref('users/' + mob).update({ suspended: true }).then(() => alert("User Suspended!"));
+    db.ref('users/' + mob).update({ suspended: true }).then(() => alert("Blocked!"));
 }
 
 function admActivateUser() {
     let mob = document.getElementById("admSearchMob").value;
-    db.ref('users/' + mob).update({ suspended: false }).then(() => alert("User Activated!"));
+    db.ref('users/' + mob).update({ suspended: false }).then(() => alert("Activated!"));
 }
 
-// --- MPIN LOGIC ---
 function logoutToMPIN() {
     let auth = JSON.parse(localStorage.getItem("shayan_auth"));
     if(auth) { auth.active = false; localStorage.setItem("shayan_auth", JSON.stringify(auth)); }
@@ -358,7 +322,7 @@ function loginWithMPIN() {
     let mob = localStorage.getItem("current_user_mob");
     db.ref('users/' + mob).once('value', (snap) => {
         let userData = snap.val();
-        if(userData && userData.suspended) return alert("Your account is suspended. Contact Admin!");
+        if(userData && userData.suspended) return alert("Account suspended!");
         if(pin === localStorage.getItem("user_mpin")) {
             let auth = JSON.parse(localStorage.getItem("shayan_auth"));
             auth.active = true;
@@ -368,24 +332,16 @@ function loginWithMPIN() {
     });
 }
 
-function forgotMPINFlow() {
-    document.getElementById("step-mpin-login").classList.add("hidden");
-    document.getElementById("step-mpin-reset").classList.remove("hidden");
-}
-
 function resetMPIN() {
     let id = document.getElementById("resetAppID").value;
-    let newPin = document.getElementById("newMPIN").value;
+    let pin = document.getElementById("newMPIN").value;
     let mob = localStorage.getItem("current_user_mob");
     db.ref('users/' + mob).once('value', (snap) => {
-        let data = snap.val();
-        if(data && data.appID === id) {
-            if(newPin.length === 4) {
-                localStorage.setItem("user_mpin", newPin);
-                alert("MPIN Reset Successful!");
-                location.reload();
-            } else { alert("Enter 4 digits!"); }
-        } else { alert("Invalid Approval ID!"); }
+        if(snap.val() && snap.val().appID === id) {
+            localStorage.setItem("user_mpin", pin);
+            alert("Reset Done!");
+            location.reload();
+        } else { alert("Wrong ID!"); }
     });
 }
 
@@ -393,28 +349,21 @@ function finishMPINSetup() {
     let pin = document.getElementById("setupMPIN").value;
     if(pin.length === 4) {
         localStorage.setItem("user_mpin", pin);
-        let days = localStorage.getItem("temp_plan_days");
-        activateSystem(days);
+        activateSystem(localStorage.getItem("temp_plan_days"));
     } else { alert("Enter 4-digit PIN"); }
 }
 
 function checkAdminFlow(val) {
-    if(val === "shayan@321") {
-        document.getElementById("admin-panel").style.display = "block";
-        document.getElementById("uName").value = "";
-    }
+    if(val === "shayan@321") { document.getElementById("admin-panel").style.display = "block"; document.getElementById("uName").value = ""; }
 }
 function closeAdmin() { document.getElementById("admin-panel").style.display = "none"; }
 
 function requestActivation() {
     let name = document.getElementById("uName").value, addr = document.getElementById("uAddr").value, mob = document.getElementById("uMob").value;
-    if(!name || !addr || mob.length < 10) return alert("Details bhariye!");
-    
-    db.ref('users/' + mob).set({
-        name, addr, mob, regDate: new Date().toLocaleString(), suspended: false, status: "pending"
-    }).then(() => {
+    if(!name || mob.length < 10) return alert("Sahi details!");
+    db.ref('users/' + mob).set({ name, addr, mob, regDate: new Date().toLocaleString(), suspended: false, status: "pending" }).then(() => {
         localStorage.setItem("current_user_mob", mob);
-        window.open(`https://wa.me/${DIST_WA}?text=${encodeURIComponent("*Verification Request*\nName: "+name+"\nAddress: "+addr+"\nMobile: "+mob)}`);
+        window.open(`https://wa.me/${DIST_WA}?text=Activate%20Request:%20${mob}`);
         document.getElementById("step-reg").classList.add("hidden");
         document.getElementById("step-lock").classList.remove("hidden");
     });
@@ -423,12 +372,15 @@ function requestActivation() {
 function verifyApprovalID() {
     let input = document.getElementById("inputApprovalID").value.trim();
     let mob = localStorage.getItem("current_user_mob");
-    db.ref('users/' + mob).once('value', (snap) => {
+    // Database se refresh karke check karega taaki ID Invalid na aaye
+    db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
         if(data && data.appID === input) {
             document.getElementById("step-lock").classList.add("hidden");
             document.getElementById("step-plans").classList.remove("hidden");
-        } else { alert("Invalid Approval ID!"); }
+        } else {
+            alert("ID Invalid! Ya toh aapne galat ID dali hai ya Admin ne abhi approve nahi kiya.");
+        }
     });
 }
 
@@ -441,7 +393,6 @@ function selectPlan(type, days) {
 function activateSystem(days) {
     let expiry = new Date().getTime() + (days * 24 * 60 * 60 * 1000);
     localStorage.setItem("shayan_auth", JSON.stringify({active:true, exp:expiry}));
-    alert("Software Activated!");
     location.reload();
 }
 
@@ -449,8 +400,8 @@ function admGenApproval() {
     let mob = document.getElementById("admMob1").value;
     let id = "APP-" + Math.floor(1000 + Math.random() * 9999);
     db.ref('users/' + mob).update({ appID: id }).then(() => {
-        document.getElementById("admShowID").innerText = "Generated ID: " + id;
-        window.open(`https://wa.me/${mob}?text=Your%20Approval%20ID:%20${id}`);
+        document.getElementById("admShowID").innerText = "ID: " + id;
+        window.open(`https://wa.me/${mob}?text=Your%20ID:%20${id}`);
     });
 }
 
@@ -458,19 +409,13 @@ document.addEventListener("DOMContentLoaded", function(){
     let auth = JSON.parse(localStorage.getItem("shayan_auth"));
     let mpin = localStorage.getItem("user_mpin");
     let mob = localStorage.getItem("current_user_mob");
-
     if(auth && mpin) {
         db.ref('users/' + mob).on('value', (snap) => {
             let userData = snap.val();
-            if(userData && userData.suspended) {
-                document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>Your account has been SUSPENDED.<br>Contact Muksidul: 9957548361</h1>";
-                return;
-            }
+            if(userData && userData.suspended) { document.body.innerHTML = "<h1>Blocked!</h1>"; return; }
             if(auth.active && new Date().getTime() < auth.exp) {
                 document.getElementById("auth-flow").classList.add("hidden");
                 document.getElementById("main-billing").classList.remove("hidden");
-                let left = Math.ceil((auth.exp - new Date().getTime()) / (1000*60*60*24));
-                document.getElementById("timer-badge").innerText = left + " Days Remaining";
                 loadShopDisplay();
                 initBillingSystem();
             } else {
@@ -481,15 +426,11 @@ document.addEventListener("DOMContentLoaded", function(){
     }
 });
 
-// --- BILLING SYSTEM CORE ---
 function initBillingSystem() {
-    let items=[];
-    let total=0;
-    let liveTotal = 0; 
+    let items=[]; let total=0; let liveTotal = 0;
     let invoiceCounter = parseInt(localStorage.getItem("invoiceCounter"))||1;
     let stock = JSON.parse(localStorage.getItem("stock"))||{};
     let stockHistory = JSON.parse(localStorage.getItem("stockHistory"))||[];
-
     const shopInput = document.getElementById("shop");
     const addressInput = document.getElementById("address");
     const phoneInput = document.getElementById("phone");
@@ -502,14 +443,13 @@ function initBillingSystem() {
     phoneInput.value = localStorage.getItem("phone")||"";
     upiInput.value = localStorage.getItem("upiId")||"";
 
-    saveShopBtn.addEventListener("click", function(){
+    saveShopBtn.onclick = function(){
         localStorage.setItem("shop", shopInput.value);
         localStorage.setItem("address", addressInput.value);
         localStorage.setItem("phone", phoneInput.value);
         localStorage.setItem("upiId", upiInput.value);
-        alert("Shop details saved!");
         loadShopDisplay();
-    });
+    };
 
     const stockProductInput = document.getElementById("stockProduct");
     const stockQtyInput = document.getElementById("stockQty");
@@ -519,198 +459,71 @@ function initBillingSystem() {
     function renderStock(){
         stockTable.innerHTML = `<tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>`;
         for(let p in stock){
-            let updates = stockHistory.filter(h=>h.product===p);
-            let lastUpdate = updates[updates.length-1]?.date || "";
-            let color = stock[p]<=5 ? "red" : "green";
             let row = stockTable.insertRow();
-            row.insertCell(0).innerHTML = p + (stock[p]<=5 ? " ⚠ Low Stock" : "");
-            row.insertCell(1).innerHTML = `<span style="color:${color}">${stock[p]}</span>`;
-            row.insertCell(2).innerText = lastUpdate ? new Date(lastUpdate).toLocaleString() : "-";
+            row.insertCell(0).innerText = p;
+            row.insertCell(1).innerText = stock[p];
+            row.insertCell(2).innerText = new Date().toLocaleDateString();
         }
     }
     renderStock();
 
-    addStockBtn.addEventListener("click", function(){
-        let p = stockProductInput.value.trim();
-        let q = +stockQtyInput.value;
-        if(!p || !q){ alert("Fill all fields"); return; }
+    addStockBtn.onclick = function(){
+        let p = stockProductInput.value.trim(); let q = +stockQtyInput.value;
+        if(!p || !q) return;
         stock[p] = (stock[p] || 0) + q;
-        stockHistory.push({product:p, qtyAdded:q, type:"Added", date:new Date().toISOString()});
         localStorage.setItem("stock", JSON.stringify(stock));
-        localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
         stockProductInput.value=""; stockQtyInput.value="";
-        renderStock();
-        renderProductDropdown();
-    });
+        renderStock(); renderProductDropdown();
+    };
 
     const productDropdown = document.getElementById("productDropdown");
     const productSearch = document.getElementById("productSearch");
 
     function renderProductDropdown(){
         productDropdown.innerHTML = "";
-        let productList = [...new Set(Object.keys(stock))];
-        productList.forEach(p=>{
-            let option = document.createElement("option");
-            option.value = p; option.text = p;
-            productDropdown.appendChild(option);
-        });
+        Object.keys(stock).forEach(p=>{ let o = document.createElement("option"); o.value=p; o.text=p; productDropdown.add(o); });
     }
     renderProductDropdown();
 
-    productSearch.addEventListener("input", function(){
+    productSearch.oninput = function(){
         let val = this.value.toLowerCase();
-        let options = Array.from(productDropdown.options);
-        let match = options.find(o=>o.value.toLowerCase().includes(val));
+        let match = Array.from(productDropdown.options).find(o=>o.value.toLowerCase().includes(val));
         if(match) productDropdown.value = match.value;
-    });
-
-    document.getElementById("downloadStockBtn").addEventListener("click", function(){
-        let html = `<table border="1"><tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>`;
-        for(let p in stock){
-            let updates = stockHistory.filter(h=>h.product===p);
-            let lastUpdate = updates[updates.length-1]?.date||"";
-            html += `<tr><td>${p}</td><td>${stock[p]}</td><td>${new Date(lastUpdate).toLocaleString()}</td></tr>`;
-        }
-        html += `</table>`;
-        let blob = new Blob([html], {type:"application/vnd.ms-excel"});
-        let a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "stock.xlsx";
-        a.click();
-    });
+    };
 
     const qtyInput = document.getElementById("qty");
     const priceInput = document.getElementById("price");
     const addItemBtn = document.getElementById("addItemBtn");
     const tableBody = document.getElementById("tableBody");
 
-    addItemBtn.addEventListener("click", function(){
-        let p = productDropdown.value.trim();
-        let q = +qtyInput.value;
-        let pr = +priceInput.value;
-        if(!p || !q || !pr){ alert("Fill all fields"); return; }
-        if(stock[p]===undefined){ alert("Product not in stock"); return; }
-        if(q>stock[p]){ alert(`Stock not sufficient for ${p}. Available: ${stock[p]}`); return; }
-
-        stock[p]-=q;
-        stockHistory.push({product:p, qtyAdded:-q, type:"Sold", date:new Date().toISOString()});
-        localStorage.setItem("stock", JSON.stringify(stock));
-        localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
-        renderStock();
-
-        let t = q*pr;
-        items.push({p,q,pr,t});
-        
-        liveTotal += t;
-        liveTotalDisplay.innerText = liveTotal;
-
+    addItemBtn.onclick = function(){
+        let p = productDropdown.value, q = +qtyInput.value, pr = +priceInput.value;
+        if(!p || !q || !pr) return;
+        if(q > (stock[p]||0)) return alert("Out of stock!");
+        stock[p]-=q; localStorage.setItem("stock", JSON.stringify(stock));
+        let t = q*pr; items.push({p,q,pr,t}); liveTotal += t; liveTotalDisplay.innerText = liveTotal;
         let row=tableBody.insertRow();
-        row.insertCell(0).innerText=items.length;
-        row.insertCell(1).innerText=p;
-        row.insertCell(2).innerText=q;
-        row.insertCell(3).innerText=pr;
-        row.insertCell(4).innerText=t;
-        productSearch.value=""; qtyInput.value=""; priceInput.value="";
-    });
+        row.insertCell(0).innerText=items.length; row.insertCell(1).innerText=p;
+        row.insertCell(2).innerText=q; row.insertCell(3).innerText=pr; row.insertCell(4).innerText=t;
+        qtyInput.value=""; priceInput.value=""; renderStock();
+    };
 
-    function getInvoiceNumber(){ let num = invoiceCounter; invoiceCounter++; localStorage.setItem("invoiceCounter", invoiceCounter); return num; }
-
-    document.getElementById("generateBillBtn").addEventListener("click", function(){
-        if(items.length===0){ alert("Add items first"); return; }
+    document.getElementById("generateBillBtn").onclick = function(){
+        if(items.length===0) return;
         let bill = document.getElementById("bill");
         total=0; items.forEach(i=> total+=i.t);
-        
-        let paid = parseFloat(document.getElementById("amtPaid").value) || total;
-        let unpaid = total - paid;
-        if(unpaid < 0) unpaid = 0;
-
-        let invoiceNo = getInvoiceNumber();
-        let dateISO = new Date().toISOString();
-        let paymentMode = document.getElementById("payment").value;
-        let upiId = upiInput.value.trim();
-
-        let html=`<div class="invoice">Invoice No: ${invoiceNo}</div><div class="clear"></div>
-        <b>${shopInput.value}</b><br>${addressInput.value}<br>Phone: ${phoneInput.value}<br>
-        Date: ${new Date(dateISO).toLocaleString()}<br>
-        Customer: ${document.getElementById("customer").value}<br>
-        Payment Mode: ${paymentMode}<hr>
-        <div style="overflow-x:auto;"><table>
-        <tr><th>No</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>`;
-        items.forEach((i,index)=>{
-            html+=`<tr><td>${index+1}</td><td>${i.p}</td><td>${i.q}</td><td>${i.pr}</td><td>${i.t}</td></tr>`;
-        });
-        html+=`<tr class="totalRow"><td colspan="4">Grand Total</td><td>₹${total}</td></tr>`;
-        html+=`<tr class="totalRow" style="color:green;"><td colspan="4">Paid Amount</td><td>₹${paid}</td></tr>`;
-        html+=`<tr class="totalRow" style="color:red;"><td colspan="4">Unpaid Balance</td><td>₹${unpaid}</td></tr></table></div>`;
-        
-        if(upiId !== "" && paid > 0){
-            let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('upi://pay?pa='+upiId+'&pn='+shopInput.value+'&am='+paid+'&cu=INR')}`;
-            html += `<div class="qr-container"><p>Scan to Pay: ₹${paid}</p><img src="${qrUrl}" alt="UPI QR Code"></div>`;
-        }
-
+        let invoiceNo = invoiceCounter++; localStorage.setItem("invoiceCounter", invoiceCounter);
+        let html=`<div class="invoice">No: ${invoiceNo}</div><b>${shopInput.value}</b><br>${addressInput.value}<br>
+        <table><tr><th>Item</th><th>Qty</th><th>Total</th></tr>`;
+        items.forEach(i=>{ html+=`<tr><td>${i.p}</td><td>${i.q}</td><td>${i.t}</td></tr>`; });
+        html+=`<tr><td colspan="2">Total</td><td>₹${total}</td></tr></table>`;
         bill.innerHTML = html;
+        items = []; tableBody.innerHTML = ""; liveTotal = 0; liveTotalDisplay.innerText = "0";
+    };
 
-        let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
-        saleHistory.push({ invoiceNo, total, paid, unpaid, date: dateISO, customer: document.getElementById("customer").value, items: [...items] });
-        localStorage.setItem("saleHistory", JSON.stringify(saleHistory));
-
-        updateSaleSummary();
-        items = [];
-        tableBody.innerHTML = "";
-        document.getElementById("amtPaid").value = "";
-        
-        liveTotal = 0;
-        liveTotalDisplay.innerText = "0";
-    });
-
-    document.getElementById("printBillBtn").addEventListener("click", function(){
-        let content = document.getElementById("bill").innerHTML;
-        if(!content) return alert("Generate bill first");
-        let mode = document.getElementById("printMode").value;
-        let width=400, height=700;
-        if(mode=="A4"){width=800;height=1100;}
-        let win = window.open('','',`width=${width},height=${height}`);
-        win.document.write(`<html><head><title>Print Bill</title><style>
-        body{font-family:monospace;padding:10px;text-align:center;} table{width:100%;border-collapse:collapse;} td,th{border:1px solid #000;padding:5px;text-align:center;} .totalRow td{font-weight:bold;} .invoice{float:right;} .clear{clear:both;} .qr-container{margin-top:10px;} .qr-container img{width:120px;}
-        </style></head><body>${content}</body></html>`);
-        win.document.close(); win.print();
-    });
-
-    document.getElementById("sendWhatsAppBtn").addEventListener("click", function(){
-        let text="🧾 BILL RECEIPT\n\n"+document.getElementById("bill").innerText;
-        window.open("https://wa.me/?text="+encodeURIComponent(text));
-    });
-
-    document.getElementById("downloadHistoryBtn").addEventListener("click", function(){
-        let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
-        if(saleHistory.length === 0) return alert("No history found");
-        let html = `<table border="1"><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Total</th><th>Paid</th><th>Unpaid</th></tr>`;
-        saleHistory.forEach(s => {
-            html += `<tr><td>${new Date(s.date).toLocaleDateString()}</td><td>${s.invoiceNo}</td><td>${s.customer}</td><td>${s.total}</td><td>${s.paid}</td><td>${s.unpaid}</td></tr>`;
-        });
-        html += `</table>`;
-        let blob = new Blob([html], {type:"application/vnd.ms-excel"});
-        let a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "Sale_History.xlsx"; a.click();
-    });
-
-    function updateSaleSummary(){
-        let history = JSON.parse(localStorage.getItem("saleHistory")) || [];
-        let today = new Date();
-        let tTotal = 0, wTotal = 0, mTotal = 0;
-        history.forEach(s => {
-            let sDate = new Date(s.date);
-            if(sDate.toDateString() === today.toDateString()) tTotal += s.total;
-            let diffDays = Math.ceil(Math.abs(today - sDate) / (1000 * 60 * 60 * 24));
-            if(diffDays <= 7) wTotal += s.total;
-            if(sDate.getMonth() === today.getMonth() && sDate.getFullYear() === today.getFullYear()) mTotal += s.total;
-        });
-        document.getElementById("saleToday").innerText = "₹" + tTotal;
-        document.getElementById("saleWeekly").innerText = "₹" + wTotal;
-        document.getElementById("saleMonthly").innerText = "₹" + mTotal;
-    }
-    updateSaleSummary();
+    document.getElementById("printBillBtn").onclick = function(){
+        window.print();
+    };
 }
 </script>
 </body>
