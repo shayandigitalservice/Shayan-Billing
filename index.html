@@ -94,11 +94,6 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
   table th, table td { padding: 6px; font-size: 12px; }
   .invoice { float: none; text-align: right; }
 }
-    /* Action Buttons Styling */
-.action-btn { padding: 5px 8px; border-radius: 6px; border: none; cursor: pointer; color: white; font-size: 12px; }
-.btn-del { background: #ef4444; }
-.btn-edit { background: #f59e0b; }
-
 </style>
 </head>
 <body>
@@ -223,7 +218,7 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
 
     <div class="table-wrapper">
         <table id="table">
-            <thead><tr><th>No</th><th>Product</th><th>Qty</th><th>Price</th><th>Total</th><th>Action</th></tr></thead>
+            <tr><th>No</th><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
             <tbody id="tableBody"></tbody>
         </table>
     </div>
@@ -266,8 +261,7 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
 
     <div class="table-wrapper">
         <table id="stockTable">
-            <thead><tr><th>Product</th><th>Qty</th><th>Action</th></tr></thead>
-            <tbody id="stockTableBody"></tbody>
+            <tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>
         </table>
     </div>
 
@@ -544,72 +538,6 @@ document.addEventListener("DOMContentLoaded", function(){
 function initBillingSystem() {
     let items=[];
     let total=0;
-        // --- DELETE & EDIT LOGIC ---
-    window.deleteItem = (i) => {
-        let itm = items[i];
-        stock[itm.p] = (stock[itm.p] || 0) + itm.q; // Qty wapas stock mein
-        items.splice(i, 1);
-        localStorage.setItem("stock", JSON.stringify(stock));
-        renderBillTable(); 
-        renderStock(); 
-    };
-
-    window.editItem = (i) => {
-        let itm = items[i];
-        document.getElementById("productSearch").value = itm.p;
-        document.getElementById("qty").value = itm.q;
-        document.getElementById("price").value = itm.pr;
-        window.deleteItem(i);
-    };
-
-    window.deleteStock = (p) => {
-        if(confirm(`Delete ${p}?`)) {
-            delete stock[p];
-            localStorage.setItem("stock", JSON.stringify(stock));
-            renderStock();
-            renderProductDropdown();
-        }
-    };
-
-    window.editStock = (oldName) => {
-    let newName = prompt("Naya Product Name likhein:", oldName);
-    if (!newName) return;
-
-    let newQty = prompt(`"${newName}" ki nayi Quantity likhein:`, stock[oldName]);
-    if (newQty !== null) {
-        if (newName !== oldName) {
-            delete stock[oldName];
-        }
-        stock[newName] = parseInt(newQty);
-        localStorage.setItem("stock", JSON.stringify(stock));
-        renderStock();
-        renderProductDropdown();
-    }
-};
-
-function renderBillTable() {
-    let tableBody = document.getElementById("tableBody");
-    tableBody.innerHTML = "";
-    let currentTotal = 0;
-    
-    items.forEach((itm, i) => {
-        currentTotal += itm.t;
-        let row = tableBody.insertRow();
-        row.innerHTML = `<td>${i+1}</td>
-                         <td>${itm.p}</td>
-                         <td>${itm.q}</td>
-                         <td>${itm.pr}</td>
-                         <td>${itm.t}</td>
-                         <td>
-                            <button class="action-btn btn-edit" onclick="editItem(${i})">✏️</button>
-                            <button class="action-btn btn-del" onclick="deleteItem(${i})">🗑️</button>
-                         </td>`;
-    });
-    
-    liveTotal = currentTotal;
-    document.getElementById("liveCurrentTotal").innerText = liveTotal;
-}
-
     let liveTotal = 0; // Tracking live total for the UI box
     let invoiceCounter = parseInt(localStorage.getItem("invoiceCounter"))||1;
     let stock = JSON.parse(localStorage.getItem("stock"))||{};
@@ -646,16 +574,11 @@ function renderBillTable() {
             let updates = stockHistory.filter(h=>h.product===p);
             let lastUpdate = updates[updates.length-1]?.date || "";
             let color = stock[p]<=5 ? "red" : "green";
-                    // Line 619 se 622 ko isse replace karein
-        let row = stockTable.insertRow();
-        row.innerHTML = `<td>${p} ${stock[p]<=5 ? "⚠" : ""}</td>
-                         <td><span style="color:${color}">${stock[p]}</span></td>
-                         <td>${lastUpdate ? new Date(lastUpdate).toLocaleString() : "-"}</td>
-                         <td>
-                            <button class="action-btn btn-edit" onclick="editStock('${p}')">✏️</button>
-                            <button class="action-btn btn-del" onclick="deleteStock('${p}')">🗑️</button>
-                         </td>`;
-   }
+            let row = stockTable.insertRow();
+            row.insertCell(0).innerHTML = p + (stock[p]<=5 ? " ⚠ Low Stock" : "");
+            row.insertCell(1).innerHTML = `<span style="color:${color}">${stock[p]}</span>`;
+            row.insertCell(2).innerText = lastUpdate ? new Date(lastUpdate).toLocaleString() : "-";
+        }
     }
     renderStock();
 
@@ -734,9 +657,12 @@ function renderBillTable() {
         liveTotal += t;
         liveTotalDisplay.innerText = liveTotal;
 
-     renderBillTable();
-
-
+        let row=tableBody.insertRow();
+        row.insertCell(0).innerText=items.length;
+        row.insertCell(1).innerText=p;
+        row.insertCell(2).innerText=q;
+        row.insertCell(3).innerText=pr;
+        row.insertCell(4).innerText=t;
         productSearch.value=""; qtyInput.value=""; priceInput.value="";
     });
 
@@ -842,4 +768,4 @@ function renderBillTable() {
 }
 </script>
 </body>
-    </html>
+                                   </html>
