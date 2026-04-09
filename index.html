@@ -571,14 +571,44 @@ function initBillingSystem() {
         }
     };
 
-    window.editStock = (p) => {
-        let n = prompt(`New Qty for ${p}:`, stock[p]);
-        if(n !== null) {
-            stock[p] = parseInt(n);
-            localStorage.setItem("stock", JSON.stringify(stock));
-            renderStock();
+    window.editStock = (oldName) => {
+    let newName = prompt("Naya Product Name likhein:", oldName);
+    if (!newName) return;
+
+    let newQty = prompt(`"${newName}" ki nayi Quantity likhein:`, stock[oldName]);
+    if (newQty !== null) {
+        if (newName !== oldName) {
+            delete stock[oldName];
         }
-    };
+        stock[newName] = parseInt(newQty);
+        localStorage.setItem("stock", JSON.stringify(stock));
+        renderStock();
+        renderProductDropdown();
+    }
+};
+
+function renderBillTable() {
+    let tableBody = document.getElementById("tableBody");
+    tableBody.innerHTML = "";
+    let currentTotal = 0;
+    
+    items.forEach((itm, i) => {
+        currentTotal += itm.t;
+        let row = tableBody.insertRow();
+        row.innerHTML = `<td>${i+1}</td>
+                         <td>${itm.p}</td>
+                         <td>${itm.q}</td>
+                         <td>${itm.pr}</td>
+                         <td>${itm.t}</td>
+                         <td>
+                            <button class="action-btn btn-edit" onclick="editItem(${i})">✏️</button>
+                            <button class="action-btn btn-del" onclick="deleteItem(${i})">🗑️</button>
+                         </td>`;
+    });
+    
+    liveTotal = currentTotal;
+    document.getElementById("liveCurrentTotal").innerText = liveTotal;
+}
 
     let liveTotal = 0; // Tracking live total for the UI box
     let invoiceCounter = parseInt(localStorage.getItem("invoiceCounter"))||1;
@@ -704,17 +734,8 @@ function initBillingSystem() {
         liveTotal += t;
         liveTotalDisplay.innerText = liveTotal;
 
-                // Line 702 se 707 ko isse replace karein
-        let row = tableBody.insertRow();
-        row.innerHTML = `<td>${items.length}</td>
-                         <td>${p}</td>
-                         <td>${q}</td>
-                         <td>${pr}</td>
-                         <td>${t}</td>
-                         <td>
-                            <button class="action-btn btn-edit" onclick="editItem(${items.length-1})">✏️</button>
-                            <button class="action-btn btn-del" onclick="deleteItem(${items.length-1})">🗑️</button>
-                         </td>`;
+     renderBillTable();
+
 
         productSearch.value=""; qtyInput.value=""; priceInput.value="";
     });
