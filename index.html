@@ -94,6 +94,11 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
   table th, table td { padding: 6px; font-size: 12px; }
   .invoice { float: none; text-align: right; }
 }
+    /* Action Buttons Styling */
+.action-btn { padding: 5px 8px; border-radius: 6px; border: none; cursor: pointer; color: white; font-size: 12px; }
+.btn-del { background: #ef4444; }
+.btn-edit { background: #f59e0b; }
+
 </style>
 </head>
 <body>
@@ -218,7 +223,7 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
 
     <div class="table-wrapper">
         <table id="table">
-            <tr><th>No</th><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+            <thead><tr><th>No</th><th>Product</th><th>Qty</th><th>Price</th><th>Total</th><th>Action</th></tr></thead>
             <tbody id="tableBody"></tbody>
         </table>
     </div>
@@ -261,7 +266,8 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
 
     <div class="table-wrapper">
         <table id="stockTable">
-            <tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>
+            <thead><tr><th>Product</th><th>Qty</th><th>Action</th></tr></thead>
+            <tbody id="stockTableBody"></tbody>
         </table>
     </div>
 
@@ -538,6 +544,42 @@ document.addEventListener("DOMContentLoaded", function(){
 function initBillingSystem() {
     let items=[];
     let total=0;
+        // --- DELETE & EDIT LOGIC ---
+    window.deleteItem = (i) => {
+        let itm = items[i];
+        stock[itm.p] = (stock[itm.p] || 0) + itm.q; // Qty wapas stock mein
+        items.splice(i, 1);
+        localStorage.setItem("stock", JSON.stringify(stock));
+        renderBillTable(); 
+        renderStock(); 
+    };
+
+    window.editItem = (i) => {
+        let itm = items[i];
+        document.getElementById("productSearch").value = itm.p;
+        document.getElementById("qty").value = itm.q;
+        document.getElementById("price").value = itm.pr;
+        window.deleteItem(i);
+    };
+
+    window.deleteStock = (p) => {
+        if(confirm(`Delete ${p}?`)) {
+            delete stock[p];
+            localStorage.setItem("stock", JSON.stringify(stock));
+            renderStock();
+            renderProductDropdown();
+        }
+    };
+
+    window.editStock = (p) => {
+        let n = prompt(`New Qty for ${p}:`, stock[p]);
+        if(n !== null) {
+            stock[p] = parseInt(n);
+            localStorage.setItem("stock", JSON.stringify(stock));
+            renderStock();
+        }
+    };
+
     let liveTotal = 0; // Tracking live total for the UI box
     let invoiceCounter = parseInt(localStorage.getItem("invoiceCounter"))||1;
     let stock = JSON.parse(localStorage.getItem("stock"))||{};
@@ -574,11 +616,16 @@ function initBillingSystem() {
             let updates = stockHistory.filter(h=>h.product===p);
             let lastUpdate = updates[updates.length-1]?.date || "";
             let color = stock[p]<=5 ? "red" : "green";
-            let row = stockTable.insertRow();
-            row.insertCell(0).innerHTML = p + (stock[p]<=5 ? " ⚠ Low Stock" : "");
-            row.insertCell(1).innerHTML = `<span style="color:${color}">${stock[p]}</span>`;
-            row.insertCell(2).innerText = lastUpdate ? new Date(lastUpdate).toLocaleString() : "-";
-        }
+                    // Line 619 se 622 ko isse replace karein
+        let row = stockTable.insertRow();
+        row.innerHTML = `<td>${p} ${stock[p]<=5 ? "⚠" : ""}</td>
+                         <td><span style="color:${color}">${stock[p]}</span></td>
+                         <td>${lastUpdate ? new Date(lastUpdate).toLocaleString() : "-"}</td>
+                         <td>
+                            <button class="action-btn btn-edit" onclick="editStock('${p}')">✏️</button>
+                            <button class="action-btn btn-del" onclick="deleteStock('${p}')">🗑️</button>
+                         </td>`;
+   }
     }
     renderStock();
 
@@ -657,12 +704,18 @@ function initBillingSystem() {
         liveTotal += t;
         liveTotalDisplay.innerText = liveTotal;
 
-        let row=tableBody.insertRow();
-        row.insertCell(0).innerText=items.length;
-        row.insertCell(1).innerText=p;
-        row.insertCell(2).innerText=q;
-        row.insertCell(3).innerText=pr;
-        row.insertCell(4).innerText=t;
+                // Line 702 se 707 ko isse replace karein
+        let row = tableBody.insertRow();
+        row.innerHTML = `<td>${items.length}</td>
+                         <td>${p}</td>
+                         <td>${q}</td>
+                         <td>${pr}</td>
+                         <td>${t}</td>
+                         <td>
+                            <button class="action-btn btn-edit" onclick="editItem(${items.length-1})">✏️</button>
+                            <button class="action-btn btn-del" onclick="deleteItem(${items.length-1})">🗑️</button>
+                         </td>`;
+
         productSearch.value=""; qtyInput.value=""; priceInput.value="";
     });
 
