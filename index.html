@@ -542,6 +542,62 @@ function initBillingSystem() {
     let invoiceCounter = parseInt(localStorage.getItem("invoiceCounter"))||1;
     let stock = JSON.parse(localStorage.getItem("stock"))||{};
     let stockHistory = JSON.parse(localStorage.getItem("stockHistory"))||[];
+    // --- DIRECT CLICK EDIT LOGIC ---
+    window.renderBillTable = () => {
+        tableBody.innerHTML = "";
+        let currentTotal = 0;
+        items.forEach((itm, i) => {
+            currentTotal += itm.t;
+            let row = tableBody.insertRow();
+            
+            row.insertCell(0).innerText = i + 1;
+
+            // Product Name (Click to Edit)
+            let cP = row.insertCell(1);
+            cP.innerText = itm.p;
+            cP.style.cursor = "pointer";
+            cP.onclick = () => editInline(i, 'p');
+
+            // Qty (Click to Edit)
+            let cQ = row.insertCell(2);
+            cQ.innerText = itm.q;
+            cQ.style.cursor = "pointer";
+            cQ.onclick = () => editInline(i, 'q');
+
+            // Price (Click to Edit)
+            let cPr = row.insertCell(3);
+            cPr.innerText = itm.pr;
+            cPr.style.cursor = "pointer";
+            cPr.onclick = () => editInline(i, 'pr');
+
+            row.insertCell(4).innerText = itm.t;
+        });
+        liveTotal = currentTotal;
+        liveTotalDisplay.innerText = liveTotal;
+    };
+
+    window.editInline = (index, field) => {
+        let msg = field === 'p' ? "Naya Product Name:" : (field === 'q' ? "Nayi Quantity:" : "Naya Price:");
+        let newVal = prompt(msg, items[index][field]);
+
+        if (newVal !== null && newVal !== "") {
+            if (field === 'q') {
+                let diff = parseInt(newVal) - items[index].q;
+                if (stock[items[index].p] < diff) return alert("Stock nahi hai!");
+                stock[items[index].p] -= diff;
+                items[index].q = parseInt(newVal);
+            } else if (field === 'pr') {
+                items[index].pr = parseFloat(newVal);
+            } else if (field === 'p') {
+                items[index].p = newVal;
+            }
+
+            items[index].t = items[index].q * items[index].pr;
+            localStorage.setItem("stock", JSON.stringify(stock));
+            renderBillTable();
+            renderStock(); // Stock table ko refresh karne ke liye
+        }
+    };
 
     const shopInput = document.getElementById("shop");
     const addressInput = document.getElementById("address");
@@ -656,13 +712,8 @@ function initBillingSystem() {
         // Update live total display
         liveTotal += t;
         liveTotalDisplay.innerText = liveTotal;
+renderBillTable();
 
-        let row=tableBody.insertRow();
-        row.insertCell(0).innerText=items.length;
-        row.insertCell(1).innerText=p;
-        row.insertCell(2).innerText=q;
-        row.insertCell(3).innerText=pr;
-        row.insertCell(4).innerText=t;
         productSearch.value=""; qtyInput.value=""; priceInput.value="";
     });
 
