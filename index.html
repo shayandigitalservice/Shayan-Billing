@@ -323,12 +323,17 @@ function tempResetCheck() {
 // --- ADMIN SYSTEM ---
 function admSearchUser() {
     let mob = document.getElementById("admSearchMob").value;
-    let data = JSON.parse(localStorage.getItem("user_db_" + mob));
-    let div = document.getElementById("admUserDetails");
-    if(data) {
-        div.style.display = "block";
-        div.innerHTML = `<b>Name:</b> ${data.name}<br><b>Address:</b> ${data.addr}<br><b>ID:</b> ${data.appID}<br><b>Key:</b> ${data.subKey}<br><b>Status:</b> ${data.suspended ? 'SUSPENDED' : 'ACTIVE'}<br><b>Reg Date:</b> ${data.regDate}`;
-    } else { alert("User not found!"); div.style.display = "none"; }
+    db.ref('users/' + mob).once('value', (snap) => {
+        let data = snap.val();
+        let div = document.getElementById("admUserDetails");
+        if(data) {
+            div.style.display = "block";
+            div.innerHTML = `<b>Name:</b> ${data.name}<br><b>ID:</b> ${data.appID || 'Not Issued'}<br><b>Status:</b> ${data.suspended ? 'BLOCKED' : 'ACTIVE'}`;
+        } else { 
+            alert("User Firebase mein nahi mila!"); 
+            div.style.display = "none";
+        }
+    });
 }
 
 function admSuspendUser() {
@@ -420,17 +425,32 @@ function requestActivation() {
 function verifyApprovalID() {
     let input = document.getElementById("inputApprovalID").value.trim();
     let mob = localStorage.getItem("current_user_mob");
-// Database se refresh karke check karega taaki ID Invalid na aaye
+
+    if(!mob) return alert("Registration data nahi mila. Dubara register karein.");
+
+    // Loading message dikhana accha hota hai
+    document.getElementById("inputApprovalID").placeholder = "Checking...";
+
     db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
+        
+        // Console mein check karne ke liye (F12 daba kar dekh sakte hain)
+        console.log("Database Data:", data);
+
         if(data && data.appID === input) {
+            alert("ID Match ho gayi! Plans choose karein.");
             document.getElementById("step-lock").classList.add("hidden");
             document.getElementById("step-plans").classList.remove("hidden");
         } else {
-            alert("ID Invalid! Ya toh aapne galat ID dali hai ya Admin ne abhi approve nahi kiya.");
+            alert("ID Invalid! Ya toh ID galat hai ya Admin ne abhi approve nahi kiya.");
+            document.getElementById("inputApprovalID").placeholder = "Enter Approval ID";
         }
+    }).catch((err) => {
+        alert("Network Error: " + err.message);
     });
-    }
+}
+
+
 
 function selectPlan(type, days, name, price) {
     localStorage.setItem("temp_plan_days", days);
@@ -469,10 +489,17 @@ function activateSystem(days) {
 
 function admGenApproval() {
     let mob = document.getElementById("admMob1").value;
+    if(!mob) return alert("Pehle Mobile Number daliye!");
+    
     let id = "APP-" + Math.floor(1000 + Math.random() * 9999);
-    localStorage.setItem("temp_approval_id", id);
-    document.getElementById("admShowID").innerText = "Generated ID: " + id;
-    window.open(`https://wa.me/${mob}?text=Your%20Approval%20ID:%20${id}`);
+    
+    // Yahi wo missing line hai jo Firebase mein ID save karegi
+    db.ref('users/' + mob).update({
+        appID: id
+    }).then(() => {
+        document.getElementById("admShowID").innerText = "Generated ID: " + id;
+        window.open(`https://wa.me/${mob}?text=Your%20Approval%20ID:%20${id}`);
+    }).catch(err => alert("Error: " + err.message));
 }
 
 function admGenKey() {
