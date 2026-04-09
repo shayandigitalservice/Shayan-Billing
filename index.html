@@ -58,6 +58,8 @@ input, select { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; b
 .billing-ui-container h2 { text-align: center; margin-bottom: 15px; font-size: 24px; }
 table { width: 100%; margin-top: 10px; border-collapse: collapse; }
 th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: center; }
+/* Inline Edit Styling */
+td[contenteditable="true"] { background: #fffde7; outline: 1px solid var(--accent); cursor: cell; }
 .totalRow td { font-weight: bold; }
 .bill { margin-top: 20px; overflow-wrap: break-word; word-wrap: break-word; border: 1px dashed #ccc; padding: 10px; }
 .invoice { float: right; }
@@ -136,7 +138,7 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
         <div class="plan-item" onclick="selectPlan('premium', 30, 'Monthly', 99)"><div><b>Monthly</b><br><small>30 Days Premium</small></div><b class="plan-price">₹99</b></div>
         <div class="plan-item" onclick="selectPlan('premium', 90, 'Quaterly', 299)"><div><b>Quaterly</b><br><small>90 Days Premium</small></div><b class="plan-price">₹299</b></div>
         <div class="plan-item" onclick="selectPlan('premium', 180, 'Half yearly', 599)"><div><b>Half Yearly</b><br><small>180 Days Premium</small></div><b class="plan-price">₹599</b></div>
-        <div classs="plan-item" onclick="selectPlan('premium', 365, 'Yearly', 999)"><div><b>Yearly</b><br><small>365 Days Business</small></div><b class="plan-price">₹999</b></div>
+        <div class="plan-item" onclick="selectPlan('premium', 365, 'Yearly', 999)"><div><b>Yearly</b><br><small>365 Days Business</small></div><b class="plan-price">₹999</b></div>
     </div>
     <div id="step-payment" class="step-card hidden">
         <p>Scan to Pay: <b id="pay-amount" style="color:var(--accent)"></b></p>
@@ -218,7 +220,9 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
 
     <div class="table-wrapper">
         <table id="table">
-            <tr><th>No</th><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+            <thead>
+                <tr><th>No</th><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+            </thead>
             <tbody id="tableBody"></tbody>
         </table>
     </div>
@@ -261,7 +265,10 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
 
     <div class="table-wrapper">
         <table id="stockTable">
-            <tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>
+            <thead>
+                <tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>
+            </thead>
+            <tbody id="stockTableBody"></tbody>
         </table>
     </div>
 
@@ -428,15 +435,10 @@ function verifyApprovalID() {
 
     if(!mob) return alert("Registration data nahi mila. Dubara register karein.");
 
-    // Loading message dikhana accha hota hai
     document.getElementById("inputApprovalID").placeholder = "Checking...";
 
     db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
-        
-        // Console mein check karne ke liye (F12 daba kar dekh sakte hain)
-        console.log("Database Data:", data);
-
         if(data && data.appID === input) {
             alert("ID Match ho gayi! Plans choose karein.");
             document.getElementById("step-lock").classList.add("hidden");
@@ -490,10 +492,7 @@ function activateSystem(days) {
 function admGenApproval() {
     let mob = document.getElementById("admMob1").value;
     if(!mob) return alert("Pehle Mobile Number daliye!");
-    
     let id = "APP-" + Math.floor(1000 + Math.random() * 9999);
-    
-    // Yahi wo missing line hai jo Firebase mein ID save karegi
     db.ref('users/' + mob).update({
         appID: id
     }).then(() => {
@@ -538,66 +537,10 @@ document.addEventListener("DOMContentLoaded", function(){
 function initBillingSystem() {
     let items=[];
     let total=0;
-    let liveTotal = 0; // Tracking live total for the UI box
+    let liveTotal = 0;
     let invoiceCounter = parseInt(localStorage.getItem("invoiceCounter"))||1;
     let stock = JSON.parse(localStorage.getItem("stock"))||{};
     let stockHistory = JSON.parse(localStorage.getItem("stockHistory"))||[];
-    // --- DIRECT CLICK EDIT LOGIC ---
-    window.renderBillTable = () => {
-        tableBody.innerHTML = "";
-        let currentTotal = 0;
-        items.forEach((itm, i) => {
-            currentTotal += itm.t;
-            let row = tableBody.insertRow();
-            
-            row.insertCell(0).innerText = i + 1;
-
-            // Product Name (Click to Edit)
-            let cP = row.insertCell(1);
-            cP.innerText = itm.p;
-            cP.style.cursor = "pointer";
-            cP.onclick = () => editInline(i, 'p');
-
-            // Qty (Click to Edit)
-            let cQ = row.insertCell(2);
-            cQ.innerText = itm.q;
-            cQ.style.cursor = "pointer";
-            cQ.onclick = () => editInline(i, 'q');
-
-            // Price (Click to Edit)
-            let cPr = row.insertCell(3);
-            cPr.innerText = itm.pr;
-            cPr.style.cursor = "pointer";
-            cPr.onclick = () => editInline(i, 'pr');
-
-            row.insertCell(4).innerText = itm.t;
-        });
-        liveTotal = currentTotal;
-        liveTotalDisplay.innerText = liveTotal;
-    };
-
-    window.editInline = (index, field) => {
-        let msg = field === 'p' ? "Naya Product Name:" : (field === 'q' ? "Nayi Quantity:" : "Naya Price:");
-        let newVal = prompt(msg, items[index][field]);
-
-        if (newVal !== null && newVal !== "") {
-            if (field === 'q') {
-                let diff = parseInt(newVal) - items[index].q;
-                if (stock[items[index].p] < diff) return alert("Stock nahi hai!");
-                stock[items[index].p] -= diff;
-                items[index].q = parseInt(newVal);
-            } else if (field === 'pr') {
-                items[index].pr = parseFloat(newVal);
-            } else if (field === 'p') {
-                items[index].p = newVal;
-            }
-
-            items[index].t = items[index].q * items[index].pr;
-            localStorage.setItem("stock", JSON.stringify(stock));
-            renderBillTable();
-            renderStock(); // Stock table ko refresh karne ke liye
-        }
-    };
 
     const shopInput = document.getElementById("shop");
     const addressInput = document.getElementById("address");
@@ -622,20 +565,50 @@ function initBillingSystem() {
     const stockProductInput = document.getElementById("stockProduct");
     const stockQtyInput = document.getElementById("stockQty");
     const addStockBtn = document.getElementById("addStockBtn");
-    const stockTable = document.getElementById("stockTable");
+    const stockTableBody = document.getElementById("stockTableBody");
 
+    // RENDER STOCK WITH INLINE EDIT
     function renderStock(){
-        stockTable.innerHTML = `<tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>`;
+        stockTableBody.innerHTML = "";
         for(let p in stock){
             let updates = stockHistory.filter(h=>h.product===p);
             let lastUpdate = updates[updates.length-1]?.date || "";
             let color = stock[p]<=5 ? "red" : "green";
-            let row = stockTable.insertRow();
-            row.insertCell(0).innerHTML = p + (stock[p]<=5 ? " ⚠ Low Stock" : "");
-            row.insertCell(1).innerHTML = `<span style="color:${color}">${stock[p]}</span>`;
+            let row = stockTableBody.insertRow();
+            
+            // Editable Item Name
+            let cellName = row.insertCell(0);
+            cellName.innerText = p;
+            cellName.contentEditable = "true";
+            cellName.onblur = function() { updateStockData(p, this.innerText, 'name'); };
+
+            // Editable Stock Quantity
+            let cellQty = row.insertCell(1);
+            cellQty.innerHTML = `<span style="color:${color}">${stock[p]}</span>`;
+            cellQty.contentEditable = "true";
+            cellQty.onblur = function() { updateStockData(p, this.innerText, 'qty'); };
+
             row.insertCell(2).innerText = lastUpdate ? new Date(lastUpdate).toLocaleString() : "-";
         }
     }
+
+    function updateStockData(oldName, newValue, type) {
+        if(type === 'name') {
+            if(newValue !== oldName && newValue.trim() !== "") {
+                stock[newValue] = stock[oldName];
+                delete stock[oldName];
+                stockHistory.forEach(h => { if(h.product === oldName) h.product = newValue; });
+            }
+        } else if(type === 'qty') {
+            let n = parseInt(newValue);
+            if(!isNaN(n)) stock[oldName] = n;
+        }
+        localStorage.setItem("stock", JSON.stringify(stock));
+        localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
+        renderStock();
+        renderProductDropdown();
+    }
+
     renderStock();
 
     addStockBtn.addEventListener("click", function(){
@@ -707,15 +680,59 @@ function initBillingSystem() {
         renderStock();
 
         let t = q*pr;
+        let itemIndex = items.length;
         items.push({p,q,pr,t});
         
-        // Update live total display
         liveTotal += t;
         liveTotalDisplay.innerText = liveTotal;
-renderBillTable();
 
+        let row=tableBody.insertRow();
+        row.insertCell(0).innerText=items.length;
+        
+        // Editable Billing Name
+        let cName = row.insertCell(1);
+        cName.innerText = p;
+        cName.contentEditable = "true";
+        cName.onblur = function() { editBillItem(itemIndex, this.innerText, 'p'); };
+
+        // Editable Billing Qty
+        let cQty = row.insertCell(2);
+        cQty.innerText = q;
+        cQty.contentEditable = "true";
+        cQty.onblur = function() { editBillItem(itemIndex, this.innerText, 'q'); };
+
+        // Editable Billing Rate
+        let cRate = row.insertCell(3);
+        cRate.innerText = pr;
+        cRate.contentEditable = "true";
+        cRate.onblur = function() { editBillItem(itemIndex, this.innerText, 'pr'); };
+
+        row.insertCell(4).innerText=t;
         productSearch.value=""; qtyInput.value=""; priceInput.value="";
     });
+
+    function editBillItem(index, val, field) {
+        let item = items[index];
+        if(field === 'p') item.p = val;
+        if(field === 'q') item.q = parseInt(val) || 0;
+        if(field === 'pr') item.pr = parseFloat(val) || 0;
+        
+        item.t = item.q * item.pr;
+        
+        // Recalculate Live Total
+        liveTotal = 0;
+        tableBody.innerHTML = "";
+        items.forEach((it, idx) => {
+            liveTotal += it.t;
+            let row = tableBody.insertRow();
+            row.insertCell(0).innerText = idx + 1;
+            let n = row.insertCell(1); n.innerText = it.p; n.contentEditable = "true"; n.onblur = function(){ editBillItem(idx, this.innerText, 'p'); };
+            let q = row.insertCell(2); q.innerText = it.q; q.contentEditable = "true"; q.onblur = function(){ editBillItem(idx, this.innerText, 'q'); };
+            let r = row.insertCell(3); r.innerText = it.pr; r.contentEditable = "true"; r.onblur = function(){ editBillItem(idx, this.innerText, 'pr'); };
+            row.insertCell(4).innerText = it.t;
+        });
+        liveTotalDisplay.innerText = liveTotal;
+    }
 
     function getInvoiceNumber(){ let num = invoiceCounter; invoiceCounter++; localStorage.setItem("invoiceCounter", invoiceCounter); return num; }
 
@@ -762,8 +779,6 @@ renderBillTable();
         items = [];
         tableBody.innerHTML = "";
         document.getElementById("amtPaid").value = "";
-        
-        // Reset Live Total after generating bill
         liveTotal = 0;
         liveTotalDisplay.innerText = "0";
     });
@@ -819,4 +834,4 @@ renderBillTable();
 }
 </script>
 </body>
-                                   </html>
+</html>
