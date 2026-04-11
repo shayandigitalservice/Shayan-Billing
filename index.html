@@ -353,14 +353,14 @@ function admSearchUser() {
         let div = document.getElementById("admUserDetails");
         if(data) {
             div.style.display = "block";
-            // Name aur Address tabhi dikhega agar Firebase mein saved ho
             div.innerHTML = `
                 <div style="border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:5px;">
-                    <b>Name:</b> ${data.name || 'No Name Found'}<br>
-                    <b>Shop:</b> ${data.addr || 'No Address Found'}<br>
+                    <b>Name:</b> ${data.name || 'N/A'}<br>
+                    <b>Shop:</b> ${data.addr || 'N/A'}<br>
                     <b>Mob:</b> ${mob}
                 </div>
                 <b>ID:</b> ${data.appID || 'Not Issued'}<br>
+                <b>Key:</b> <span style="color:blue; font-weight:bold;">${data.subKey || 'Not Generated'}</span><br>
                 <b>Status:</b> <span style="color:${data.suspended ? 'red' : 'green'}">
                     ${data.suspended ? 'SUSPENDED' : 'ACTIVE'}
                 </span>
@@ -371,6 +371,7 @@ function admSearchUser() {
         }
     });
 }
+
 
 
 function admSuspendUser() {
@@ -551,11 +552,19 @@ function admGenApproval() {
 
 function admGenKey() {
     let mob = document.getElementById("admMob2").value;
+    if(!mob) return alert("Pehle Mobile Number daliye!");
+    
     let key = "KEY-" + Math.floor(1000 + Math.random() * 9999);
-    localStorage.setItem("temp_sub_key", key);
-    document.getElementById("admShowKey").innerText = "Generated Key: " + key;
-    window.open(`https://wa.me/${mob}?text=Your%20Subscription%20Key:%20${key}`);
+    
+    // FIX: Key ko Firebase mein save karein
+    db.ref('users/' + mob).update({
+        subKey: key
+    }).then(() => {
+        document.getElementById("admShowKey").innerText = "Generated Key: " + key;
+        window.open(`https://wa.me/${mob}?text=Your%20Subscription%20Key:%20${key}`);
+    }).catch(err => alert("Error: " + err.message));
 }
+
 
 document.addEventListener("DOMContentLoaded", function(){
     let auth = JSON.parse(localStorage.getItem("shayan_auth"));
