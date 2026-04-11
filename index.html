@@ -343,25 +343,56 @@ function admSearchUser() {
     });
 }
 
+// --- ADMIN SYSTEM (FIXED FOR FIREBASE) ---
+function admSearchUser() {
+    let mob = document.getElementById("admSearchMob").value;
+    if(!mob) return alert("Pehle Mobile Number daliye!");
+    
+    db.ref('users/' + mob).once('value', (snap) => {
+        let data = snap.val();
+        let div = document.getElementById("admUserDetails");
+        if(data) {
+            div.style.display = "block";
+            div.innerHTML = `
+                <b>Name:</b> ${data.name || 'N/A'}<br>
+                <b>ID:</b> ${data.appID || 'Not Issued'}<br>
+                <b>Status:</b> <span style="color:${data.suspended ? 'red' : 'green'}">
+                    ${data.suspended ? 'SUSPENDED (BLOCKED)' : 'ACTIVE'}
+                </span>
+            `;
+        } else { 
+            alert("User Firebase Database mein nahi mila!"); 
+            div.style.display = "none";
+        }
+    });
+}
+
 function admSuspendUser() {
     let mob = document.getElementById("admSearchMob").value;
-    let data = JSON.parse(localStorage.getItem("user_db_" + mob));
-    if(data) {
-        data.suspended = true;
-        localStorage.setItem("user_db_" + mob, JSON.stringify(data));
-        alert("User Suspended Successfully!");
-    } else { alert("User not found!"); }
+    if(!mob) return alert("Mobile number enter karein!");
+    
+    // Firebase mein status update
+    db.ref('users/' + mob).update({
+        suspended: true
+    }).then(() => {
+        alert("User successfully suspended!");
+        admSearchUser(); // Details refresh karne ke liye
+    }).catch(err => alert("Error: " + err.message));
 }
 
 function admActivateUser() {
     let mob = document.getElementById("admSearchMob").value;
-    let data = JSON.parse(localStorage.getItem("user_db_" + mob));
-    if(data) {
-        data.suspended = false;
-        localStorage.setItem("user_db_" + mob, JSON.stringify(data));
-        alert("User Activated Successfully!");
-    } else { alert("User not found!"); }
+    if(!mob) return alert("Mobile number enter karein!");
+    
+    // Firebase mein status update
+    db.ref('users/' + mob).update({
+        suspended: false
+    }).then(() => {
+        alert("User successfully activated!");
+        admSearchUser(); // Details refresh karne ke liye
+    }).catch(err => alert("Error: " + err.message));
 }
+
 
 // --- MPIN LOGIC ---
 function logoutToMPIN() {
