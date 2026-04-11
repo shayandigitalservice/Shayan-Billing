@@ -353,19 +353,25 @@ function admSearchUser() {
         let div = document.getElementById("admUserDetails");
         if(data) {
             div.style.display = "block";
+            // Name aur Address tabhi dikhega agar Firebase mein saved ho
             div.innerHTML = `
-                <b>Name:</b> ${data.name || 'N/A'}<br>
+                <div style="border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:5px;">
+                    <b>Name:</b> ${data.name || 'No Name Found'}<br>
+                    <b>Shop:</b> ${data.addr || 'No Address Found'}<br>
+                    <b>Mob:</b> ${mob}
+                </div>
                 <b>ID:</b> ${data.appID || 'Not Issued'}<br>
                 <b>Status:</b> <span style="color:${data.suspended ? 'red' : 'green'}">
-                    ${data.suspended ? 'SUSPENDED (BLOCKED)' : 'ACTIVE'}
+                    ${data.suspended ? 'SUSPENDED' : 'ACTIVE'}
                 </span>
             `;
         } else { 
-            alert("User Firebase Database mein nahi mila!"); 
+            alert("User record nahi mila!"); 
             div.style.display = "none";
         }
     });
 }
+
 
 function admSuspendUser() {
     let mob = document.getElementById("admSearchMob").value;
@@ -450,15 +456,26 @@ function checkAdminFlow(val) {
 function closeAdmin() { document.getElementById("admin-panel").style.display = "none"; }
 
 function requestActivation() {
-    let name = document.getElementById("uName").value, addr = document.getElementById("uAddr").value, mob = document.getElementById("uMob").value;
+    let name = document.getElementById("uName").value, 
+        addr = document.getElementById("uAddr").value, 
+        mob = document.getElementById("uMob").value;
+
     if(!name || !addr || mob.length < 10) return alert("Details bhariye!");
+
     let userData = { name, addr, mob, regDate: new Date().toLocaleString(), suspended: false };
+    
+    // Local memory mein save kiya
     localStorage.setItem("user_db_" + mob, JSON.stringify(userData));
     localStorage.setItem("current_user_mob", mob);
-    window.open(`https://wa.me/${DIST_WA}?text=${encodeURIComponent("*Verification Request*\nName: "+name+"\nAddress: "+addr+"\nMobile: "+mob)}`);
-    document.getElementById("step-reg").classList.add("hidden");
-    document.getElementById("step-lock").classList.remove("hidden");
+
+    // FIX: Firebase mein bhi data bhej rahe hain taaki Admin ko dikhe
+    db.ref('users/' + mob).set(userData).then(() => {
+        window.open(`https://wa.me/${DIST_WA}?text=${encodeURIComponent("*Verification Request*\nName: "+name+"\nAddress: "+addr+"\nMobile: "+mob)}`);
+        document.getElementById("step-reg").classList.add("hidden");
+        document.getElementById("step-lock").classList.remove("hidden");
+    }).catch(err => alert("Firebase Error: " + err.message));
 }
+
 
 function verifyApprovalID() {
     let input = document.getElementById("inputApprovalID").value.trim();
