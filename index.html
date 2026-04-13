@@ -293,7 +293,8 @@ const db = firebase.database();
 
 const DIST_WA = "919957548361";
 const DIST_UPI = "9957548361@ybl";
-    function toggleShopForm() {
+
+function toggleShopForm() {
     document.getElementById("shop-form").classList.toggle("hidden");
     document.getElementById("shop-display").classList.toggle("hidden");
 }
@@ -307,7 +308,7 @@ function loadShopDisplay() {
         document.getElementById("disp-shop-addr").innerText = a;
         document.getElementById("disp-shop-phone").innerText = "Phone: " + p;
     }
-    }
+}
 
 // --- TEMPORARY RESET LOGIC ---
 let resetClickCount = 0;
@@ -330,310 +331,152 @@ function tempResetCheck() {
 // --- ADMIN SYSTEM ---
 function admSearchUser() {
     let mob = document.getElementById("admSearchMob").value;
-    db.ref('users/' + mob).once('value', (snap) => {
-        let data = snap.val();
-        let div = document.getElementById("admUserDetails");
-        if(data) {
-            div.style.display = "block";
-            div.innerHTML = `<b>Name:</b> ${data.name}<br><b>ID:</b> ${data.appID || 'Not Issued'}<br><b>Status:</b> ${data.suspended ? 'BLOCKED' : 'ACTIVE'}`;
-        } else { 
-            alert("User Firebase mein nahi mila!"); 
-            div.style.display = "none";
-        }
-    });
-}
-
-// --- ADMIN SYSTEM (FIXED FOR FIREBASE) ---
-function admSearchUser() {
-    let mob = document.getElementById("admSearchMob").value;
     if(!mob) return alert("Pehle Mobile Number daliye!");
-    
     db.ref('users/' + mob).once('value', (snap) => {
         let data = snap.val();
         let div = document.getElementById("admUserDetails");
         if(data) {
             div.style.display = "block";
             div.innerHTML = `
-                <div style="border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:5px;">
-                    <b>Name:</b> ${data.name || 'N/A'}<br>
-                    <b>Shop:</b> ${data.addr || 'N/A'}<br>
-                    <b>Mob:</b> ${mob}
-                </div>
-                <b>ID:</b> ${data.appID || 'Not Issued'}<br>
-                <b>Key:</b> <span style="color:blue; font-weight:bold;">${data.subKey || 'Not Generated'}</span><br>
-                <b>Status:</b> <span style="color:${data.suspended ? 'red' : 'green'}">
-                    ${data.suspended ? 'SUSPENDED' : 'ACTIVE'}
-                </span>
-            `;
-        } else { 
-            alert("User record nahi mila!"); 
-            div.style.display = "none";
-        }
+                <b>Name:</b> ${data.name}<br>
+                <b>Shop:</b> ${data.addr}<br>
+                <b>ID:</b> ${data.appID || 'N/A'}<br>
+                <b>Key:</b> ${data.subKey || 'N/A'}<br>
+                <b>Expiry:</b> ${data.expiryDate ? new Date(data.expiryDate).toLocaleDateString() : 'N/A'}<br>
+                <b>Status:</b> ${data.suspended ? '<span style="color:red">BLOCKED</span>' : '<span style="color:green">ACTIVE</span>'}`;
+        } else { alert("User nahi mila!"); }
     });
 }
 
-
-
 function admSuspendUser() {
     let mob = document.getElementById("admSearchMob").value;
-    if(!mob) return alert("Mobile number enter karein!");
-    
-    // Firebase mein status update
-    db.ref('users/' + mob).update({
-        suspended: true
-    }).then(() => {
-        alert("User successfully suspended!");
-        admSearchUser(); // Details refresh karne ke liye
-    }).catch(err => alert("Error: " + err.message));
+    db.ref('users/' + mob).update({ suspended: true }).then(() => { alert("Blocked!"); admSearchUser(); });
 }
 
 function admActivateUser() {
     let mob = document.getElementById("admSearchMob").value;
-    if(!mob) return alert("Mobile number enter karein!");
-    
-    // Firebase mein status update
-    db.ref('users/' + mob).update({
-        suspended: false
-    }).then(() => {
-        alert("User successfully activated!");
-        admSearchUser(); // Details refresh karne ke liye
-    }).catch(err => alert("Error: " + err.message));
+    db.ref('users/' + mob).update({ suspended: false }).then(() => { alert("Activated!"); admSearchUser(); });
 }
 
-
-// --- MPIN LOGIC ---
-function logoutToMPIN() {
-    let auth = JSON.parse(localStorage.getItem("shayan_auth"));
-    if(auth) { auth.active = false; localStorage.setItem("shayan_auth", JSON.stringify(auth)); }
-    location.reload();
-}
-
+// --- LOGIN & AUTH ---
 function loginWithMPIN() {
     let pin = document.getElementById("inputMPIN").value;
     let mob = localStorage.getItem("current_user_mob");
-    let userData = JSON.parse(localStorage.getItem("user_db_" + mob));
-    if(userData && userData.suspended) return alert("Your account is suspended. Contact Admin!");
-    if(pin === localStorage.getItem("user_mpin")) {
-        let auth = JSON.parse(localStorage.getItem("shayan_auth"));
-        auth.active = true;
-        localStorage.setItem("shayan_auth", JSON.stringify(auth));
-        location.reload();
-    } else { alert("Incorrect MPIN!"); }
-}
-
-function forgotMPINFlow() {
-    document.getElementById("step-mpin-login").classList.add("hidden");
-    document.getElementById("step-mpin-reset").classList.remove("hidden");
-}
-
-function resetMPIN() {
-    let id = document.getElementById("resetAppID").value;
-    let key = document.getElementById("resetKey").value;
-    let newPin = document.getElementById("newMPIN").value;
-    if(id === localStorage.getItem("temp_approval_id") && key === localStorage.getItem("temp_sub_key")) {
-        if(newPin.length === 4) {
-            localStorage.setItem("user_mpin", newPin);
-            alert("MPIN Reset Successful!");
+    
+    db.ref('users/' + mob).once('value', (snap) => {
+        let data = snap.val();
+        if(data && data.suspended) return alert("Your account is suspended!");
+        
+        if(pin === localStorage.getItem("user_mpin")) {
+            let auth = JSON.parse(localStorage.getItem("shayan_auth"));
+            auth.active = true;
+            localStorage.setItem("shayan_auth", JSON.stringify(auth));
             location.reload();
-        } else { alert("Enter 4 digits!"); }
-    } else { alert("Invalid ID or Key!"); }
+        } else { alert("Incorrect MPIN!"); }
+    });
 }
-
-function finishMPINSetup() {
-    let pin = document.getElementById("setupMPIN").value;
-    if(pin.length === 4) {
-        localStorage.setItem("user_mpin", pin);
-        let days = localStorage.getItem("temp_plan_days");
-        activateSystem(days);
-    } else { alert("Enter 4-digit PIN"); }
-}
-
-function checkAdminFlow(val) {
-    if(val === "shayan@321") {
-        document.getElementById("admin-panel").style.display = "block";
-        document.getElementById("uName").value = "";
-    }
-}
-function closeAdmin() { document.getElementById("admin-panel").style.display = "none"; }
 
 function requestActivation() {
-    let name = document.getElementById("uName").value, 
-        addr = document.getElementById("uAddr").value, 
-        mob = document.getElementById("uMob").value;
-
+    let name = document.getElementById("uName").value, addr = document.getElementById("uAddr").value, mob = document.getElementById("uMob").value;
     if(!name || !addr || mob.length < 10) return alert("Details bhariye!");
 
-    let userData = { name, addr, mob, regDate: new Date().toLocaleString(), suspended: false };
-    
-    // Local memory mein save kiya
-    localStorage.setItem("user_db_" + mob, JSON.stringify(userData));
-    localStorage.setItem("current_user_mob", mob);
+    db.ref('users/' + mob).once('value').then((snap) => {
+        let existing = snap.val();
+        let userData = { name, addr, mob, regDate: new Date().toLocaleString() };
+        
+        localStorage.setItem("user_db_" + mob, JSON.stringify({...existing, ...userData}));
+        localStorage.setItem("current_user_mob", mob);
 
-    // FIX: Firebase mein bhi data bhej rahe hain taaki Admin ko dikhe
-    db.ref('users/' + mob).set(userData).then(() => {
-        window.open(`https://wa.me/${DIST_WA}?text=${encodeURIComponent("*Verification Request*\nName: "+name+"\nAddress: "+addr+"\nMobile: "+mob)}`);
-        document.getElementById("step-reg").classList.add("hidden");
-        document.getElementById("step-lock").classList.remove("hidden");
-    }).catch(err => alert("Firebase Error: " + err.message));
+        db.ref('users/' + mob).update(userData).then(() => {
+            if(existing && existing.appID) alert("Welcome back! Verify your ID to restore.");
+            else window.open(`https://wa.me/${DIST_WA}?text=${encodeURIComponent("*Verification Request*\nName: "+name+"\nAddress: "+addr+"\nMobile: "+mob)}`);
+            
+            document.getElementById("step-reg").classList.add("hidden");
+            document.getElementById("step-lock").classList.remove("hidden");
+        });
+    });
 }
 
 function verifyApprovalID() {
     let input = document.getElementById("inputApprovalID").value.trim();
     let mob = localStorage.getItem("current_user_mob");
 
-    if(!mob) return alert("Registration data nahi mila.");
-
     db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
-        
         if(data && data.appID === input) {
-            // Purana data local storage mein restore karein
             localStorage.setItem("temp_approval_id", input);
-            
-            // AGER USER KE PAAS PEHLE SE KEY HAI (Purana User)
-            if(data.subKey && data.expiryDate) {
-                alert("Subscription Restored! Set your MPIN to continue.");
+            if(data.expiryDate && data.subKey) {
+                alert("Subscription Restored!");
+                localStorage.setItem("restored_expiry", data.expiryDate);
                 localStorage.setItem("temp_sub_key", data.subKey);
-                localStorage.setItem("temp_plan_days", "restored"); // Flag for restore
-                localStorage.setItem("restored_expiry", data.expiryDate); // Save old expiry
-                
                 document.getElementById("step-lock").classList.add("hidden");
                 document.getElementById("step-set-mpin").classList.remove("hidden");
-            } 
-            // AGER NAYA USER HAI
-            else {
-                alert("ID Verified! Please choose a plan.");
+                localStorage.setItem("temp_plan_days", "restored");
+            } else {
                 document.getElementById("step-lock").classList.add("hidden");
                 document.getElementById("step-plans").classList.remove("hidden");
             }
-        } else {
-            alert("Invalid ID or not approved yet.");
-        }
+        } else { alert("Invalid ID!"); }
     });
 }
-
-
-
-
-function selectPlan(type, days, name, price) {
-    localStorage.setItem("temp_plan_days", days);
-    if(type === 'trial') {
-        document.getElementById("step-plans").classList.add("hidden");
-        document.getElementById("step-set-mpin").classList.remove("hidden");
-    } else {
-        document.getElementById("pay-amount").innerText = "₹" + price;
-        let qr = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('upi://pay?pa='+DIST_UPI+'&am='+price+'&cu=INR')}`;
-        document.getElementById("qr-display").innerHTML = `<img src="${qr}">`;
-        document.getElementById("step-plans").classList.add("hidden");
-        document.getElementById("step-payment").classList.remove("hidden");
-    }
-}
-
-function sendPaymentWA() { window.open(`https://wa.me/${DIST_WA}?text=Payment%20Done.%20Please%20send%20my%20key.`); }
 
 function verifySubKey() {
     let input = document.getElementById("inputSubKey").value.trim();
     let mob = localStorage.getItem("current_user_mob");
 
-    if(!mob) return alert("User details missing. Please restart.");
-
-    // Firebase se latest key check karein
     db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
         if(data && data.subKey === input) {
-            // Key match ho gayi, ab local memory update karein
-            let userData = JSON.parse(localStorage.getItem("user_db_" + mob));
-            userData.subKey = input;
-            localStorage.setItem("user_db_" + mob, JSON.stringify(userData));
-            localStorage.setItem("temp_sub_key", input); // Local storage sync
-
+            localStorage.setItem("temp_sub_key", input);
             alert("Key Verified!");
-            document.getElementById("step-payment").classList.add("hidden");
-            document.getElementById("step-set-mpin").classList.remove("hidden");
-        } else {
-            alert("Invalid Subscription Key! Please check again.");
-        }
-    }).catch(err => alert("Network Error: " + err.message));
+            let days = data.planDays || 30;
+            activateSystem(days);
+        } else { alert("Invalid Key!"); }
+    });
 }
+
 function activateSystem(days) {
     let mob = localStorage.getItem("current_user_mob");
-    let expiry;
+    let expiry = (days === "restored") ? parseInt(localStorage.getItem("restored_expiry")) : new Date().getTime() + (days * 24 * 60 * 60 * 1000);
 
-    // Agar data restore ho raha hai toh purani date use karein
-    if(days === "restored") {
-        expiry = parseInt(localStorage.getItem("restored_expiry"));
-    } else {
-        expiry = new Date().getTime() + (days * 24 * 60 * 60 * 1000);
-    }
-
-    let authData = { active: true, exp: expiry };
-    localStorage.setItem("shayan_auth", JSON.stringify(authData));
-
-    // Firebase mein expiry date update karein taaki dusre phone pe mil sake
-    db.ref('users/' + mob).update({
-        expiryDate: expiry
-    }).then(() => {
-        alert("Software Activated!");
+    localStorage.setItem("shayan_auth", JSON.stringify({active:true, exp:expiry}));
+    db.ref('users/' + mob).update({ expiryDate: expiry }).then(() => {
+        alert("System Activated!");
         location.reload();
     });
 }
 
+function finishMPINSetup() {
+    let pin = document.getElementById("setupMPIN").value;
+    if(pin.length === 4) {
+        localStorage.setItem("user_mpin", pin);
+        activateSystem(localStorage.getItem("temp_plan_days"));
+    } else { alert("Enter 4 digits!"); }
+}
 
+// --- ADMIN GEN FUNCTIONS ---
 function admGenApproval() {
     let mob = document.getElementById("admMob1").value;
-    if(!mob) return alert("Pehle Mobile Number daliye!");
     let id = "APP-" + Math.floor(1000 + Math.random() * 9999);
-    db.ref('users/' + mob).update({
-        appID: id
-    }).then(() => {
-        document.getElementById("admShowID").innerText = "Generated ID: " + id;
-        window.open(`https://wa.me/${mob}?text=Your%20Approval%20ID:%20${id}`);
-    }).catch(err => alert("Error: " + err.message));
+    db.ref('users/' + mob).update({ appID: id }).then(() => {
+        document.getElementById("admShowID").innerText = "ID: " + id;
+        window.open(`https://wa.me/${mob}?text=Your%20ID:%20${id}`);
+    });
 }
 
 function admGenKey() {
     let mob = document.getElementById("admMob2").value;
-    let days = document.getElementById("admPlanDays").value; // Days select box se uthayein
-    
-    if(!mob) return alert("Pehle Mobile Number daliye!");
-    
+    let days = document.getElementById("admPlanDays").value;
     let key = "KEY-" + Math.floor(1000 + Math.random() * 9999);
-    
-    // FIX: Key ke saath-saath Days bhi Firebase mein save karein
-    db.ref('users/' + mob).update({
-        subKey: key,
-        planDays: days // Ye line zaroori hai
-    }).then(() => {
-        document.getElementById("admShowKey").innerText = "Generated Key: " + key;
-        window.open(`https://wa.me/${mob}?text=Your%20Subscription%20Key:%20${key}%20for%20${days}%20Days.`);
-    }).catch(err => alert("Error: " + err.message));
+    db.ref('users/' + mob).update({ subKey: key, planDays: days }).then(() => {
+        document.getElementById("admShowKey").innerText = "Key: " + key;
+        window.open(`https://wa.me/${mob}?text=Your%20Key:%20${key}%20for%20${days}%20days`);
+    });
 }
 
+// Baaki billing system functions (initBillingSystem etc.) yahan niche rahenge...
+</script>
 
-
-document.addEventListener("DOMContentLoaded", function(){
-    let auth = JSON.parse(localStorage.getItem("shayan_auth"));
-    let mpin = localStorage.getItem("user_mpin");
-    let mob = localStorage.getItem("current_user_mob");
-    let userData = mob ? JSON.parse(localStorage.getItem("user_db_" + mob)) : null;
-
-    if(auth && mpin) {
-        if(userData && userData.suspended) {
-            document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>Your account has been SUSPENDED.<br>Contact Muksidul: 9957548361</h1>";
-            return;
-        }
-        if(auth.active && new Date().getTime() < auth.exp) {
-            document.getElementById("auth-flow").classList.add("hidden");
-            document.getElementById("main-billing").classList.remove("hidden");
-            let left = Math.ceil((auth.exp - new Date().getTime()) / (1000*60*60*24));
-            document.getElementById("timer-badge").innerText = left + " Days Remaining";
-            initBillingSystem();
-        } else {
-            document.getElementById("step-reg").classList.add("hidden");
-            document.getElementById("step-mpin-login").classList.remove("hidden");
-        }
-    }
-});
 
 // --- BILLING SYSTEM CORE ---
 function initBillingSystem() {
