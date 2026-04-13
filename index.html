@@ -475,7 +475,6 @@ function admGenKey() {
 }
 
 // Baaki billing system functions (initBillingSystem etc.) yahan niche rahenge...
-</script>
 
 
 // --- BILLING SYSTEM CORE ---
@@ -779,4 +778,13 @@ function initBillingSystem() {
 }
 </script>
 </body>
+    <div id="expiry-screen" class="step-card hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    <h1 style="color: #ef4444; -webkit-text-fill-color: #ef4444;">⚠️ Plan Expired!</h1>
+    <p>Aapka subscription khatam ho gaya hai. Software continue karne ke liye renew karein.</p>
+    <div style="background: #fee2e2; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #f87171;">
+        <b>Contact Admin: 9957548361</b>
+    </div>
+    <button class="btn-primary" onclick="goToSubscriptions()" style="max-width: 300px;">Back to Subscription Page</button>
+</div>
+
 </html>
