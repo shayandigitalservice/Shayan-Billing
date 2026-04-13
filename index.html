@@ -477,27 +477,36 @@ function requestActivation() {
     }).catch(err => alert("Firebase Error: " + err.message));
 }
 
-
 function verifyApprovalID() {
     let input = document.getElementById("inputApprovalID").value.trim();
     let mob = localStorage.getItem("current_user_mob");
 
     if(!mob) return alert("Registration data nahi mila. Dubara register karein.");
 
-    document.getElementById("inputApprovalID").placeholder = "Checking...";
+    // Button text change karein taaki user ko lage ki checking ho rahi hai
+    const btn = document.querySelector("#step-lock .btn-primary");
+    const originalText = btn.innerText;
+    btn.innerText = "Checking...";
+    btn.disabled = true;
 
     db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
+        
         if(data && data.appID === input) {
+            // UPDATE: LocalStorage mein ID save karein taaki reset/forgot MPIN mein kaam aaye
+            localStorage.setItem("temp_approval_id", input); 
+            
             alert("ID Match ho gayi! Plans choose karein.");
             document.getElementById("step-lock").classList.add("hidden");
             document.getElementById("step-plans").classList.remove("hidden");
         } else {
-            alert("ID Invalid! Ya toh ID galat hai ya Admin ne abhi approve nahi kiya.");
-            document.getElementById("inputApprovalID").placeholder = "Enter Approval ID";
+            alert("Invalid ID! Ya toh ID galat hai ya Admin ne abhi approve nahi kiya.");
         }
     }).catch((err) => {
         alert("Network Error: " + err.message);
+    }).finally(() => {
+        btn.innerText = originalText;
+        btn.disabled = false;
     });
 }
 
@@ -522,21 +531,28 @@ function sendPaymentWA() { window.open(`https://wa.me/${DIST_WA}?text=Payment%20
 function verifySubKey() {
     let input = document.getElementById("inputSubKey").value.trim();
     let mob = localStorage.getItem("current_user_mob");
-    if(input === localStorage.getItem("temp_sub_key")) {
-        let userData = JSON.parse(localStorage.getItem("user_db_" + mob));
-        userData.subKey = input;
-        localStorage.setItem("user_db_" + mob, JSON.stringify(userData));
-        document.getElementById("step-payment").classList.add("hidden");
-        document.getElementById("step-set-mpin").classList.remove("hidden");
-    } else { alert("Invalid Subscription Key!"); }
+
+    if(!mob) return alert("User details missing. Please restart.");
+
+    // Firebase se latest key check karein
+    db.ref('users/' + mob).once('value').then((snap) => {
+        let data = snap.val();
+        if(data && data.subKey === input) {
+            // Key match ho gayi, ab local memory update karein
+            let userData = JSON.parse(localStorage.getItem("user_db_" + mob));
+            userData.subKey = input;
+            localStorage.setItem("user_db_" + mob, JSON.stringify(userData));
+            localStorage.setItem("temp_sub_key", input); // Local storage sync
+
+            alert("Key Verified!");
+            document.getElementById("step-payment").classList.add("hidden");
+            document.getElementById("step-set-mpin").classList.remove("hidden");
+        } else {
+            alert("Invalid Subscription Key! Please check again.");
+        }
+    }).catch(err => alert("Network Error: " + err.message));
 }
 
-function activateSystem(days) {
-    let expiry = new Date().getTime() + (days * 24 * 60 * 60 * 1000);
-    localStorage.setItem("shayan_auth", JSON.stringify({active:true, exp:expiry}));
-    alert("Software Activated!");
-    location.reload();
-}
 
 function admGenApproval() {
     let mob = document.getElementById("admMob1").value;
