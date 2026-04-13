@@ -481,34 +481,37 @@ function verifyApprovalID() {
     let input = document.getElementById("inputApprovalID").value.trim();
     let mob = localStorage.getItem("current_user_mob");
 
-    if(!mob) return alert("Registration data nahi mila. Dubara register karein.");
-
-    // Button text change karein taaki user ko lage ki checking ho rahi hai
-    const btn = document.querySelector("#step-lock .btn-primary");
-    const originalText = btn.innerText;
-    btn.innerText = "Checking...";
-    btn.disabled = true;
+    if(!mob) return alert("Registration data nahi mila.");
 
     db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
         
         if(data && data.appID === input) {
-            // UPDATE: LocalStorage mein ID save karein taaki reset/forgot MPIN mein kaam aaye
-            localStorage.setItem("temp_approval_id", input); 
+            // Purana data local storage mein restore karein
+            localStorage.setItem("temp_approval_id", input);
             
-            alert("ID Match ho gayi! Plans choose karein.");
-            document.getElementById("step-lock").classList.add("hidden");
-            document.getElementById("step-plans").classList.remove("hidden");
+            // AGER USER KE PAAS PEHLE SE KEY HAI (Purana User)
+            if(data.subKey && data.expiryDate) {
+                alert("Subscription Restored! Set your MPIN to continue.");
+                localStorage.setItem("temp_sub_key", data.subKey);
+                localStorage.setItem("temp_plan_days", "restored"); // Flag for restore
+                localStorage.setItem("restored_expiry", data.expiryDate); // Save old expiry
+                
+                document.getElementById("step-lock").classList.add("hidden");
+                document.getElementById("step-set-mpin").classList.remove("hidden");
+            } 
+            // AGER NAYA USER HAI
+            else {
+                alert("ID Verified! Please choose a plan.");
+                document.getElementById("step-lock").classList.add("hidden");
+                document.getElementById("step-plans").classList.remove("hidden");
+            }
         } else {
-            alert("Invalid ID! Ya toh ID galat hai ya Admin ne abhi approve nahi kiya.");
+            alert("Invalid ID or not approved yet.");
         }
-    }).catch((err) => {
-        alert("Network Error: " + err.message);
-    }).finally(() => {
-        btn.innerText = originalText;
-        btn.disabled = false;
     });
 }
+
 
 
 
@@ -552,6 +555,28 @@ function verifySubKey() {
         }
     }).catch(err => alert("Network Error: " + err.message));
 }
+function activateSystem(days) {
+    let mob = localStorage.getItem("current_user_mob");
+    let expiry;
+
+    // Agar data restore ho raha hai toh purani date use karein
+    if(days === "restored") {
+        expiry = parseInt(localStorage.getItem("restored_expiry"));
+    } else {
+        expiry = new Date().getTime() + (days * 24 * 60 * 60 * 1000);
+    }
+
+    let authData = { active: true, exp: expiry };
+    localStorage.setItem("shayan_auth", JSON.stringify(authData));
+
+    // Firebase mein expiry date update karein taaki dusre phone pe mil sake
+    db.ref('users/' + mob).update({
+        expiryDate: expiry
+    }).then(() => {
+        alert("Software Activated!");
+        location.reload();
+    });
+}
 
 
 function admGenApproval() {
@@ -568,18 +593,22 @@ function admGenApproval() {
 
 function admGenKey() {
     let mob = document.getElementById("admMob2").value;
+    let days = document.getElementById("admPlanDays").value; // Days select box se uthayein
+    
     if(!mob) return alert("Pehle Mobile Number daliye!");
     
     let key = "KEY-" + Math.floor(1000 + Math.random() * 9999);
     
-    // FIX: Key ko Firebase mein save karein
+    // FIX: Key ke saath-saath Days bhi Firebase mein save karein
     db.ref('users/' + mob).update({
-        subKey: key
+        subKey: key,
+        planDays: days // Ye line zaroori hai
     }).then(() => {
         document.getElementById("admShowKey").innerText = "Generated Key: " + key;
-        window.open(`https://wa.me/${mob}?text=Your%20Subscription%20Key:%20${key}`);
+        window.open(`https://wa.me/${mob}?text=Your%20Subscription%20Key:%20${key}%20for%20${days}%20Days.`);
     }).catch(err => alert("Error: " + err.message));
 }
+
 
 
 document.addEventListener("DOMContentLoaded", function(){
