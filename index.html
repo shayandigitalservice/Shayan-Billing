@@ -581,12 +581,21 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
         renderStock();
     });
 
-    const productDropdown = document.getElementById("productDropdown"), productSearch = document.getElementById("productSearch");
+        const productDropdown = document.getElementById("productDropdown");
+    const productSearch = document.getElementById("productSearch");
+
     productSearch.addEventListener("input", function(){
-        let val = this.value.toLowerCase();
-        let match = Array.from(productDropdown.options).find(o=>o.value.toLowerCase().includes(val));
-        if(match) productDropdown.value = match.value;
+        let val = this.value.toLowerCase().trim();
+        let options = Array.from(productDropdown.options);
+        
+        // Sahi Matching Logic
+        let match = options.find(o => o.value.toLowerCase().includes(val));
+        
+        if(match) {
+            productDropdown.value = match.value;
+        }
     });
+
 
     const qtyInput = document.getElementById("qty"), priceInput = document.getElementById("price");
     const addItemBtn = document.getElementById("addItemBtn"), tableBody = document.getElementById("tableBody");
