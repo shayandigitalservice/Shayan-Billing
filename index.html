@@ -207,6 +207,11 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
             <input id="address" placeholder="Address">
             <input id="phone" placeholder="Phone">
             <input id="upiId" placeholder="Enter Your UPI ID (e.g. name@upi)">
+            <input id="gstin" placeholder="GSTIN (Optional)">
+<div style="margin:10px 0; text-align:left; font-size:14px;">
+    <label><input type="checkbox" id="gstEnabled"> <b>Enable GST Billing</b></label>
+</div>
+
             <button id="saveShopBtn" class="btn-blue">Save & Hide Details</button>
         </div>
     </div>
@@ -216,12 +221,21 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
 
     <input id="qty" type="number" placeholder="Qty">
     <input id="price" type="number" placeholder="Price">
+    <select id="gstRate" style="margin-top:5px;">
+    <option value="0">GST 0%</option>
+    <option value="5">GST 5%</option>
+    <option value="12">GST 12%</option>
+    <option value="18">GST 18%</option>
+    <option value="28">GST 28%</option>
+</select>
+
     <button id="addItemBtn" class="btn-blue">Add Item</button>
 
     <div class="table-wrapper">
         <table id="table">
             <thead>
-                <tr><th>No</th><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+                <tr><th>No</th><th>Product</th><th>Qty</th><th>Price</th><th>Tax%</th><th>Total</th></tr>
+
             </thead>
             <tbody id="tableBody"></tbody>
         </table>
@@ -503,12 +517,23 @@ function initBillingSystem() {
     addressInput.value = localStorage.getItem("address")||"";
     phoneInput.value = localStorage.getItem("phone")||"";
     upiInput.value = localStorage.getItem("upiId")||"";
+    shopInput.value = localStorage.getItem("shop") || "";
+    addressInput.value = localStorage.getItem("address") || "";
+    phoneInput.value = localStorage.getItem("phone") || "";
+    upiInput.value = localStorage.getItem("upiId") || "";
+    
+    // --- Ye do lines yahan bhi add karein ---
+    document.getElementById("gstin").value = localStorage.getItem("gstin") || "";
+    document.getElementById("gstEnabled").checked = localStorage.getItem("gstEnabled") === "true";
 
     saveShopBtn.addEventListener("click", function(){
         localStorage.setItem("shop", shopInput.value);
         localStorage.setItem("address", addressInput.value);
         localStorage.setItem("phone", phoneInput.value);
         localStorage.setItem("upiId", upiInput.value);
+        localStorage.setItem("gstEnabled", document.getElementById("gstEnabled").checked);
+localStorage.setItem("gstin", document.getElementById("gstin").value);
+
         alert("Shop details saved!");
     });
 
@@ -567,21 +592,46 @@ function initBillingSystem() {
     const addItemBtn = document.getElementById("addItemBtn"), tableBody = document.getElementById("tableBody");
 
     addItemBtn.addEventListener("click", function(){
-        let p = productDropdown.value, q = +qtyInput.value, pr = +priceInput.value;
-        if(!p || !q || !pr) return alert("Fill all fields");
-        if(q > stock[p]) return alert(`Low stock. Available: ${stock[p]}`);
-        stock[p]-=q;
-        stockHistory.push({product:p, qtyAdded:-q, type:"Sold", date:new Date().toISOString()});
-        localStorage.setItem("stock", JSON.stringify(stock));
-        localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
-        renderStock();
-        let t = q*pr; let idx = items.length; items.push({p,q,pr,t});
-        liveTotal += t; liveTotalDisplay.innerText = liveTotal;
-        let row=tableBody.insertRow(); row.insertCell(0).innerText=items.length;
-        row.insertCell(1).innerText=p; row.insertCell(2).innerText=q;
-        row.insertCell(3).innerText=pr; row.insertCell(4).innerText=t;
-        qtyInput.value=""; priceInput.value="";
-    });
+    let p = productDropdown.value, q = +qtyInput.value, pr = +priceInput.value;
+    
+    // Check karo GST enabled hai ya nahi
+    let isGstEnabled = document.getElementById("gstEnabled").checked;
+    let gstP = isGstEnabled ? +document.getElementById("gstRate").value : 0;
+    
+    if(!p || !q || !pr) return alert("Fill all fields");
+    if(q > stock[p]) return alert(`Low stock. Available: ${stock[p]}`);
+
+    // Calculation Logic
+    let taxable = q * pr;
+    let gstAmt = taxable * (gstP / 100);
+    let t = taxable + gstAmt;
+
+    // Stock Update
+    stock[p]-=q;
+    localStorage.setItem("stock", JSON.stringify(stock));
+    renderStock();
+
+    // Items array mein GST data save karna
+    let idx = items.length;
+    items.push({p, q, pr, taxable, gstP, gstAmt, t});
+    
+    liveTotal += t;
+    liveTotalDisplay.innerText = liveTotal.toFixed(2);
+
+    // Table Row Update
+    let row = tableBody.insertRow();
+    row.innerHTML = `
+        <td>${items.length}</td>
+        <td>${p}</td>
+        <td>${q}</td>
+        <td>${pr}</td>
+        <td>${gstP}%</td>
+        <td>${t.toFixed(2)}</td>
+    `;
+    
+    qtyInput.value=""; priceInput.value="";
+});
+
 
     document.getElementById("generateBillBtn").addEventListener("click", function(){
         if(items.length===0) return alert("Add items");
