@@ -778,28 +778,42 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
             totalAmt += i.t;
         });
 
-        // 2. UPI Intent Link banana (Isse customer direct pay kar payega)
-        // Link format: upi://pay?pa=YOURID&am=AMOUNT&tn=BILLNO
-        const paymentLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(shopName)}&am=${totalAmt.toFixed(0)}&cu=INR`;
+        document.getElementById("sendWhatsAppBtn").addEventListener("click", function() {
+    const shopName = localStorage.getItem("shop") || "Shop";
+    const customer = document.getElementById("customer").value || "Customer";
+    const upiId = localStorage.getItem("upiId");
+    const billBox = document.getElementById("bill");
+    
+    // Check karein ki bill generate hua hai ya nahi
+    if (!billBox || billBox.innerHTML === "") return alert("Pehle 'Generate Bill' dabayein!");
+    if (!upiId) return alert("Settings mein UPI ID bhariye!");
 
-        // 3. WhatsApp Message taiyar karna
-        let waText = `*${shopName} - Digital Receipt* 📄\n`;
-        waText += `--------------------------\n`;
-        waText += `*Customer:* ${customer}\n`;
-        waText += `*Date:* ${new Date().toLocaleDateString()}\n\n`;
-        waText += `*Items:*\n${itemText}`;
-        waText += `--------------------------\n`;
-        waText += `*Total Amount: ₹${totalAmt.toFixed(0)}*\n\n`;
-        waText += `*Click below to Pay Now:* 👇\n`;
-        waText += `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(paymentLink)}\n\n`;
-        waText += `*(Ya fir is link ko browser mein kholein:)* \n${paymentLink}\n\n`;
-        waText += `Thank you! Visit again. 🙏`;
+    // Bill ke text se Grand Total dhundna
+    const billText = billBox.innerText;
+    const match = billText.match(/Grand Total\s*₹?\s*(\d+(\.\d+)?)/i);
+    const totalAmt = match ? match[1] : "0";
 
-        // 4. WhatsApp kholna
-        const customerPhone = document.getElementById("phone").value;
-        const finalUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(waText)}`;
-        window.open(finalUrl, '_blank');
-    });
+    if (totalAmt === "0") return alert("Bill amount zero hai, check karein!");
+
+    // Simple UPI Link jo har app (GPay/PhonePe) detect kar leta hai
+    const paymentLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(shopName)}&am=${totalAmt}&cu=INR`;
+    
+    // WhatsApp Message Design
+    let waText = `*${shopName} - Digital Receipt* 📄\n`;
+    waText += `--------------------------\n`;
+    waText += `*Customer:* ${customer}\n`;
+    waText += `*Total Amount: ₹${totalAmt}*\n`;
+    waText += `--------------------------\n\n`;
+    waText += `*Tap to Pay Now (UPI):* 👇\n`;
+    waText += `${paymentLink}\n\n`;
+    waText += `*(GPay, PhonePe, ya Paytm se pay karein)*\n\n`;
+    waText += `Thank you! Visit again. 🙏`;
+
+    const customerPhone = document.getElementById("phone").value;
+    const finalUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(waText)}`;
+    
+    window.open(finalUrl, '_blank');
+});
 
 
     loadShopDisplay();
