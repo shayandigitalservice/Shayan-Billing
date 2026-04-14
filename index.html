@@ -322,13 +322,11 @@ function goToSubscriptions() {
 function requestActivation() {
     let name = document.getElementById("uName").value, addr = document.getElementById("uAddr").value, mob = document.getElementById("uMob").value;
     if(!name || !addr || mob.length < 10) return alert("Details bhariye!");
-
     db.ref('users/' + mob).once('value').then((snap) => {
         let existing = snap.val();
         let userData = { name, addr, mob, regDate: new Date().toLocaleString() };
         localStorage.setItem("current_user_mob", mob);
         localStorage.setItem("user_db_" + mob, JSON.stringify({...existing, ...userData}));
-
         db.ref('users/' + mob).update(userData).then(() => {
             if(existing && existing.appID) alert("Welcome back! Verify ID to restore.");
             else window.open(`https://wa.me/${DIST_WA}?text=${encodeURIComponent("*Verification Request*\nName: "+name+"\nAddress: "+addr+"\nMobile: "+mob)}`);
@@ -339,8 +337,7 @@ function requestActivation() {
 }
 
 function verifyApprovalID() {
-    let input = document.getElementById("inputApprovalID").value.trim();
-    let mob = localStorage.getItem("current_user_mob");
+    let input = document.getElementById("inputApprovalID").value.trim(), mob = localStorage.getItem("current_user_mob");
     db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
         if(data && data.appID === input) {
@@ -376,7 +373,6 @@ function activateSystem(days) {
     db.ref('users/' + mob).update({ expiryDate: expiry }).then(() => { alert("Activated!"); location.reload(); });
 }
 
-// --- MPIN & SECURITY ---
 function loginWithMPIN() {
     let pin = document.getElementById("inputMPIN").value, mob = localStorage.getItem("current_user_mob");
     db.ref('users/' + mob).once('value', (snap) => {
@@ -399,7 +395,6 @@ function finishMPINSetup() {
     } else { alert("Enter 4-digit PIN"); }
 }
 
-// --- ADMIN SYSTEM ---
 function checkAdminFlow(v) { if(v === "shayan@321") document.getElementById("admin-panel").style.display = "block"; }
 function closeAdmin() { document.getElementById("admin-panel").style.display = "none"; }
 
@@ -451,7 +446,6 @@ function selectPlan(type, days, name, price) {
     }
 }
 
-// --- DOM READY CHECK ---
 document.addEventListener("DOMContentLoaded", function(){
     let auth = JSON.parse(localStorage.getItem("shayan_auth"));
     let mpin = localStorage.getItem("user_mpin");
@@ -466,8 +460,8 @@ document.addEventListener("DOMContentLoaded", function(){
         if(new Date().getTime() > auth.exp) {
             document.getElementById("auth-flow").classList.add("hidden");
             document.getElementById("main-billing").classList.add("hidden");
-            if(document.getElementById("expiry-screen")) document.getElementById("expiry-screen").style.display = "flex";
-            else { alert("Plan Expired!"); goToSubscriptions(); }
+            let expScr = document.getElementById("expiry-screen");
+            if(expScr) expScr.style.display = "flex";
             return;
         }
         if(auth.active) {
@@ -480,13 +474,9 @@ document.addEventListener("DOMContentLoaded", function(){
         }
     }
 });
-        }
-});
 </script>
 
 <script>
-
-
 // --- BILLING SYSTEM CORE ---
 function initBillingSystem() {
     let items=[]; let total=0; let liveTotal = 0;
@@ -540,7 +530,7 @@ function initBillingSystem() {
         }
         localStorage.setItem("stock", JSON.stringify(stock));
         localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
-        renderStock(); renderProductDropdown();
+        renderStock();
     }
     renderStock();
 
@@ -552,19 +542,10 @@ function initBillingSystem() {
         localStorage.setItem("stock", JSON.stringify(stock));
         localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
         stockProductInput.value=""; stockQtyInput.value="";
-        renderStock(); renderProductDropdown();
+        renderStock();
     });
 
     const productDropdown = document.getElementById("productDropdown"), productSearch = document.getElementById("productSearch");
-    function renderProductDropdown(){
-        productDropdown.innerHTML = "";
-        Object.keys(stock).forEach(p=>{
-            let opt = document.createElement("option"); opt.value = p; opt.text = p;
-            productDropdown.appendChild(opt);
-        });
-    }
-    renderProductDropdown();
-
     productSearch.addEventListener("input", function(){
         let val = this.value.toLowerCase();
         let match = Array.from(productDropdown.options).find(o=>o.value.toLowerCase().includes(val));
@@ -602,24 +583,16 @@ function initBillingSystem() {
     });
     loadShopDisplay();
 }
-    function goToSubscriptions() {
-    document.getElementById("expiry-screen").style.display = "none";
-    document.getElementById("auth-flow").classList.remove("hidden");
-    document.getElementById("step-reg").classList.add("hidden");
-    document.getElementById("step-plans").classList.remove("hidden");
+// System functions ko end mein rakhein
+function logoutToMPIN() {
+    let auth = JSON.parse(localStorage.getItem("shayan_auth"));
+    if(auth) { auth.active = false; localStorage.setItem("shayan_auth", JSON.stringify(auth)); }
+    location.reload();
 }
-
+function tempResetCheck() {
+    if(confirm("Confirm Full Reset?")) { localStorage.clear(); location.reload(); }
+}
 </script>
 
-
-    <div id="expiry-screen" class="step-card" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: #f8fafc; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box;">
-    <h1 style="color: #ef4444; margin-bottom: 10px;">⚠️ Plan Expired!</h1>
-    <p style="color: #64748b; margin-bottom: 20px;">Aapka subscription khatam ho gaya hai. Software continue karne ke liye renew karein.</p>
-    <div style="background: #fee2e2; padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #f87171; color: #b91c1c;">
-        <b>Contact Admin for Key: 9957548361</b>
-    </div>
-    <button class="btn-primary" onclick="goToSubscriptions()" style="width: 250px;">Renew Plan / Enter Key</button>
-</div>
-    
 </body>
     </html>
