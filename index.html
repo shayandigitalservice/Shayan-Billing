@@ -216,6 +216,7 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
         </div>
     </div>
     <input id="customer" placeholder="Customer Name">
+    <input id="custMob" type="number" placeholder="Customer WhatsApp Number">
     <input id="productSearch" placeholder="Search Product">
     <select id="productDropdown"></select>
 
@@ -565,6 +566,39 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
         }
     }
 
+    // --- 1. DOWNLOAD STOCK EXCEL (CSV Format) ---
+    document.getElementById("downloadStockBtn").onclick = function() {
+        if (Object.keys(stock).length === 0) return alert("Stock khali hai!");
+        
+        let csvContent = "Product,Available Qty\n"; // Header
+        for (let p in stock) {
+            csvContent += `${p},${stock[p]}\n`;
+        }
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'Shayan_Stock_Report.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
+    // --- 2. DOWNLOAD BILLING HISTORY ---
+    document.getElementById("downloadHistoryBtn").onclick = function() {
+        // Hum localStorage se saara sale data uthayenge
+        // Note: Iske liye aapki saleHistory save hona zaroori hai
+        const history = localStorage.getItem("saleHistory") || "Invoice No,Date,Total\nNo data found";
+        
+        const blob = new Blob([history], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Sales_History.csv';
+        a.click();
+    };
 
     function updateStockData(oldName, newValue, type) {
         if(type === 'name') {
@@ -760,47 +794,49 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
         printWindow.print();
     });
 
-        // --- WHATSAPP SHARE LOGIC ---
-document.getElementById("sendWhatsAppBtn").onclick = function() {
-    const shopName = localStorage.getItem("shop") || "Our Shop";
-    const customer = document.getElementById("customer").value || "Customer";
-    const upiId = localStorage.getItem("upiId");
+        document.getElementById("sendWhatsAppBtn").onclick = function() {
     const billBox = document.getElementById("bill");
-    const customerPhone = document.getElementById("phone").value;
+    const upiId = localStorage.getItem("upiId");
+    const shopName = localStorage.getItem("shop") || "Shop";
+    const customer = document.getElementById("customer").value || "Customer";
+    const custMob = document.getElementById("custMob").value; // Customer ka number yahan se aayega
 
-    // 1. Basic Checks
+    // 1. Validation
     if (!billBox || billBox.innerHTML === "") {
         return alert("Pehle 'Generate Bill' dabayein!");
     }
+    if (!custMob) {
+        return alert("Pehle Customer WhatsApp Number bhariye!");
+    }
     if (!upiId) {
-        return alert("Settings (⚙️) mein UPI ID bhariye!");
+        return alert("Settings mein UPI ID bhariye!");
     }
 
-    // 2. Bill ke text se "Paid Amount" dhundna (Exact payment ke liye)
+    // 2. Bill ke text se "Paid Amount" nikaalna
     const billText = billBox.innerText;
     const match = billText.match(/Paid Amount\s*[:₹]?\s*(\d+)/i);
     const paidAmt = match ? match[1] : "0";
 
-    if (paidAmt === "0" || paidAmt === "") {
-        return alert("Paid amount nahi mila. Please bill check karein!");
+    if (paidAmt === "0") {
+        return alert("Paid amount zero hai, check karein!");
     }
 
-    // 3. Payment Link (Direct UPI Intent)
+    // 3. Payment Link taiyar karna
     const paymentLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(shopName)}&am=${paidAmt}&cu=INR`;
 
     // 4. WhatsApp Message Design
-    let waText = `*${shopName} - Payment Request* 📄\n`;
+    let waText = `*${shopName} - Digital Receipt* 📄\n`;
     waText += `--------------------------\n`;
     waText += `*Customer:* ${customer}\n`;
-    waText += `*Payable Amount: ₹${paidAmt}*\n`;
+    waText += `*Amount to Pay: ₹${paidAmt}*\n`;
     waText += `--------------------------\n\n`;
-    waText += `*Tap below to Pay via UPI:* 👇\n`;
+    waText += `*Tap to Pay via UPI:* 👇\n`;
     waText += `${paymentLink}\n\n`;
-    waText += `*(GPay, PhonePe, ya Paytm se pay karein)*\n\n`;
+    waText += `*(GPay, PhonePe, Paytm sab chalega)*\n\n`;
     waText += `Thank you! 🙏`;
 
-    // 5. WhatsApp kholna
-    const finalUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(waText)}`;
+    // 5. Auto Send (Naye window mein WhatsApp khulega)
+    const finalUrl = `https://wa.me/${custMob}?text=${encodeURIComponent(waText)}`;
     window.open(finalUrl, '_blank');
 };
 
