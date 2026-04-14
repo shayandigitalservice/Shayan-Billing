@@ -867,7 +867,7 @@ function updateSaleDashboard() {
                     <th style="border: 1px solid #000; padding: 5px; width: 100px;">Total</th>
                 </tr>
             </thead>
-            <tbody>`
+                        <tbody>`;
 
     items.forEach((i, idx) => {
         html += `
@@ -881,7 +881,7 @@ function updateSaleDashboard() {
             </tr>`;
     });
 
-        html += `
+    html += `
             <tr style="font-weight: normal;">
                 <td colspan="${isGst ? 5 : 4}" style="border: 1px solid #000; padding: 5px; text-align: right;">CGST</td>
                 <td style="border: 1px solid #000; padding: 5px;">₹${(totalGst / 2).toFixed(2)}</td>
@@ -903,24 +903,23 @@ function updateSaleDashboard() {
                 <td style="border: 1px solid #000; padding: 5px;">₹${unpaid.toFixed(0)}</td>
             </tr>
             </tbody>
-        </table>`;
-
-
+        </table>
         <div style="text-align: center; margin-top: 15px; border: 1px dashed #999; padding: 10px;">
             <p style="margin: 0 0 10px 0; font-size: 15px;">Scan to Pay: ₹${paid.toFixed(0)}</p>
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent('upi://pay?pa='+upiId+'&am='+paid)}" style="width: 120px; height: 120px;">
         </div>
     </div>`;
 
-    bill.innerHTML = html;
+    document.getElementById("bill").innerHTML = html;
     
-    // Clean-up
+    // --- Clean-up ---
     items = []; 
     document.getElementById("tableBody").innerHTML = ""; 
     liveTotal = 0; 
     document.getElementById("liveCurrentTotal").innerText = "0";
     if(typeof renderStock === "function") renderStock();
 });
+
 
     // --- PRINT BILL LOGIC ---
     document.getElementById("printBillBtn").addEventListener("click", function() {
