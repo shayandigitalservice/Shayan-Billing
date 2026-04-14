@@ -776,6 +776,58 @@ function initBillingSystem() {
     }
     updateSaleSummary();
 }
+    // --- SABSE NICHE PASTE KAREIN ---
+
+function goToSubscriptions() {
+    if(document.getElementById("expiry-screen")) {
+        document.getElementById("expiry-screen").style.display = "none";
+    }
+    document.getElementById("auth-flow").classList.remove("hidden");
+    document.getElementById("step-reg").classList.add("hidden");
+    document.getElementById("step-plans").classList.remove("hidden");
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+    let auth = JSON.parse(localStorage.getItem("shayan_auth"));
+    let mpin = localStorage.getItem("user_mpin");
+    let mob = localStorage.getItem("current_user_mob");
+    let userData = mob ? JSON.parse(localStorage.getItem("user_db_" + mob)) : null;
+
+    if(auth && mpin) {
+        // Suspended check
+        if(userData && userData.suspended) {
+            document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:100px;'>Account SUSPENDED.<br>Contact: 9957548361</h1>";
+            return;
+        }
+
+        // Expiry Lock check
+        if(new Date().getTime() > auth.exp) {
+            document.getElementById("auth-flow").classList.add("hidden");
+            document.getElementById("main-billing").classList.add("hidden");
+            // Agar expiry screen div nahi hai to alert dikhayein
+            let expScr = document.getElementById("expiry-screen");
+            if(expScr) {
+                expScr.style.display = "flex";
+            } else {
+                alert("Plan Expired! Please Renew.");
+                goToSubscriptions();
+            }
+            return;
+        }
+
+        if(auth.active) {
+            document.getElementById("auth-flow").classList.add("hidden");
+            document.getElementById("main-billing").classList.remove("hidden");
+            let left = Math.ceil((auth.exp - new Date().getTime()) / (1000*60*60*24));
+            document.getElementById("timer-badge").innerText = (left > 0 ? left : 0) + " Days Remaining";
+            initBillingSystem();
+        } else {
+            document.getElementById("step-reg").classList.add("hidden");
+            document.getElementById("step-mpin-login").classList.remove("hidden");
+        }
+    }
+});
+
 </script>
 </body>
     <div id="expiry-screen" class="step-card hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center;">
