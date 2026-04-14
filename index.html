@@ -480,6 +480,12 @@ document.addEventListener("DOMContentLoaded", function(){
         }
     }
 });
+        }
+});
+</script>
+
+<script>
+
 
 // --- BILLING SYSTEM CORE ---
 function initBillingSystem() {
@@ -596,7 +602,24 @@ function initBillingSystem() {
     });
     loadShopDisplay();
 }
+    function goToSubscriptions() {
+    document.getElementById("expiry-screen").style.display = "none";
+    document.getElementById("auth-flow").classList.remove("hidden");
+    document.getElementById("step-reg").classList.add("hidden");
+    document.getElementById("step-plans").classList.remove("hidden");
+}
+
 </script>
 
+
+    <div id="expiry-screen" class="step-card" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: #f8fafc; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box;">
+    <h1 style="color: #ef4444; margin-bottom: 10px;">⚠️ Plan Expired!</h1>
+    <p style="color: #64748b; margin-bottom: 20px;">Aapka subscription khatam ho gaya hai. Software continue karne ke liye renew karein.</p>
+    <div style="background: #fee2e2; padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #f87171; color: #b91c1c;">
+        <b>Contact Admin for Key: 9957548361</b>
+    </div>
+    <button class="btn-primary" onclick="goToSubscriptions()" style="width: 250px;">Renew Plan / Enter Key</button>
+</div>
+    
 </body>
     </html>
