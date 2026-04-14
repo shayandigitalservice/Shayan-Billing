@@ -664,6 +664,10 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
     stock[p]-=q;
     localStorage.setItem("stock", JSON.stringify(stock));
     renderStock();
+        // Low Stock Alert Popup
+        if (stock[p] <= 5) {
+            alert("⚠️ LOW STOCK ALERT!\n\n" + p + " khatam hone wala hai.\nAbhi sirf " + stock[p] + " bacha hai!");
+        }
 
     // Items array mein GST data save karna
     let idx = items.length;
