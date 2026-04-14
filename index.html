@@ -565,6 +565,35 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
             row.insertCell(2).innerText = lastUpdate ? new Date(lastUpdate).toLocaleString() : "-";
         }
     }
+function updateSaleDashboard() {
+    let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
+    let now = new Date();
+    let today = 0, weekly = 0, monthly = 0;
+
+    saleHistory.forEach(sale => {
+        let saleDate = new Date(sale.date);
+        let diffDays = Math.ceil(Math.abs(now - saleDate) / (1000 * 60 * 60 * 24));
+
+        // Aaj ki sale
+        if (saleDate.toDateString() === now.toDateString()) today += sale.amount;
+        
+        // Is hafte ki sale (7 Din)
+        if (diffDays <= 7) weekly += sale.amount;
+        
+        // Is mahine ki sale
+        if (saleDate.getMonth() === now.getMonth() && saleDate.getFullYear() === now.getFullYear()) {
+            monthly += sale.amount;
+        }
+    });
+
+    // UI par numbers update karein
+    if(document.getElementById("saleToday")) document.getElementById("saleToday").innerText = "₹" + today.toFixed(0);
+    if(document.getElementById("saleWeekly")) document.getElementById("saleWeekly").innerText = "₹" + weekly.toFixed(0);
+    if(document.getElementById("saleMonthly")) document.getElementById("saleMonthly").innerText = "₹" + monthly.toFixed(0);
+}
+
+// Software load hote hi chal jaye
+updateSaleDashboard();
 
     // --- 1. DOWNLOAD STOCK EXCEL (CSV Format) ---
     document.getElementById("downloadStockBtn").onclick = function() {
@@ -707,6 +736,16 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
     
     let invoiceNo = invoiceCounter++; 
     localStorage.setItem("invoiceCounter", invoiceCounter);
+    // Sale Data History mein save karein
+    let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
+    saleHistory.push({
+        date: new Date().toISOString(),
+        amount: grandTotal
+    });
+    localStorage.setItem("saleHistory", JSON.stringify(saleHistory));
+    
+    // Niche dashboard numbers update karne ke liye
+    if(typeof updateSaleDashboard === "function") updateSaleDashboard();
 
     // --- EXACT LAYOUT START ---
     let html = `
