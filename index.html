@@ -747,6 +747,39 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
     if(typeof renderStock === "function") renderStock();
 });
 
+    // --- PRINT BILL LOGIC ---
+    document.getElementById("printBillBtn").addEventListener("click", function() {
+        const billContent = document.getElementById("bill").innerHTML;
+        if (!billContent) return alert("Pehle bill generate karein!");
+        
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Print Bill</title></head><body>');
+        printWindow.document.write(billContent);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    });
+
+    // --- WHATSAPP SHARE LOGIC ---
+    document.getElementById("sendWhatsAppBtn").addEventListener("click", function() {
+        const shopName = localStorage.getItem("shop") || "Shop";
+        const customer = document.getElementById("customer").value || "Customer";
+        const billBox = document.getElementById("bill");
+        
+        if (!billBox.innerText) return alert("Pehle bill generate karein!");
+
+        // Bill ka text format nikaalna
+        let waText = `*${shopName} - Invoice* \n`;
+        waText += `Customer: ${customer} \n`;
+        waText += `--------------------------\n`;
+        waText += billBox.innerText; // Poora bill text copy karega
+        waText += `\n--------------------------\n`;
+        waText += `Thank you for visiting!`;
+
+        const phone = document.getElementById("phone").value || ""; 
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(waText)}`;
+        window.open(url, '_blank');
+    });
 
     loadShopDisplay();
 }
