@@ -540,9 +540,19 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
     const stockProductInput = document.getElementById("stockProduct"), stockQtyInput = document.getElementById("stockQty");
     const addStockBtn = document.getElementById("addStockBtn"), stockTableBody = document.getElementById("stockTableBody");
 
-    function renderStock(){
+        function renderStock(){
         stockTableBody.innerHTML = "";
+        const productDropdown = document.getElementById("productDropdown");
+        productDropdown.innerHTML = '<option value="">Select Product</option>'; // Dropdown saaf karo
+
         for(let p in stock){
+            // 1. Dropdown mein item add karo
+            let opt = document.createElement("option");
+            opt.value = p;
+            opt.text = p;
+            productDropdown.add(opt);
+
+            // 2. Table mein item dikhao (Pehle wala logic)
             let updates = stockHistory.filter(h=>h.product===p);
             let lastUpdate = updates[updates.length-1]?.date || "";
             let color = stock[p]<=5 ? "red" : "green";
@@ -554,6 +564,7 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
             row.insertCell(2).innerText = lastUpdate ? new Date(lastUpdate).toLocaleString() : "-";
         }
     }
+
 
     function updateStockData(oldName, newValue, type) {
         if(type === 'name') {
