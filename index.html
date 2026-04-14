@@ -67,7 +67,19 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
 .qr-container { text-align: center; margin-top: 15px; padding: 10px; border: 1px dashed #ccc; }
 .qr-container img { width: 150px; height: 150px; }
 .hidden { display: none !important; }
-.status-badge { display: inline-block; padding: 5px 12px; background: #dcfce7; color: #166534; border-radius: 10px; font-size: 12px; font-weight: 700; }
+.status-badge {
+    display: inline-block;
+    padding: 8px 15px;
+    background: #fef3c7; /* Light Yellow */
+    color: #b45309; /* Dark Orange/Brown */
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 800;
+    border: 1px solid #f59e0b;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+}
+
 .table-wrapper { overflow-x: auto; width: 100%; margin-bottom: 10px; }
 /* Shop Display Style */
 #shop-display { text-align: center; padding: 15px; border: 1px dashed var(--accent); border-radius: 12px; margin-bottom: 10px; position: relative; }
@@ -565,6 +577,29 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
             row.insertCell(2).innerText = lastUpdate ? new Date(lastUpdate).toLocaleString() : "-";
         }
     }
+    function updateExpiryBadge() {
+    const auth = JSON.parse(localStorage.getItem("shayan_auth"));
+    const badge = document.getElementById("timer-badge");
+    
+    if (auth && auth.exp && badge) {
+        const now = new Date().getTime();
+        const diff = auth.exp - now;
+        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+        if (days > 0) {
+            badge.innerText = `⏳ ${days} Days Remaining`;
+            badge.style.display = "inline-block";
+        } else {
+            badge.innerText = "⚠️ Plan Expired";
+            badge.style.background = "#fee2e2";
+            badge.style.color = "#991b1b";
+        }
+    }
+}
+
+// Ise software load hote hi chala dein
+updateExpiryBadge();
+
 function updateSaleDashboard() {
     let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
     let now = new Date();
