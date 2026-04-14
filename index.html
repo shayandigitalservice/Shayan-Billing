@@ -742,6 +742,10 @@ function updateSaleDashboard() {
     let totalTaxable = items.reduce((s, i) => s + i.taxable, 0);
     let totalGst = items.reduce((s, i) => s + i.gstAmt, 0);
     let grandTotal = totalTaxable + totalGst;
+    // GST ko 50-50 baantne ke liye
+    let cgstAmt = totalGst / 2;
+    let sgstAmt = totalGst / 2;
+
     let paid = +document.getElementById("amtPaid").value || grandTotal;
     let unpaid = grandTotal - paid;
     
@@ -804,8 +808,16 @@ function updateSaleDashboard() {
             </tr>`;
     });
 
-    html += `
-            <tr style="font-weight: bold;">
+        html += `
+            <tr style="font-weight: normal;">
+                <td colspan="${isGst ? 5 : 4}" style="border: 1px solid #000; padding: 5px; text-align: right;">CGST</td>
+                <td style="border: 1px solid #000; padding: 5px;">₹${(totalGst / 2).toFixed(2)}</td>
+            </tr>
+            <tr style="font-weight: normal;">
+                <td colspan="${isGst ? 5 : 4}" style="border: 1px solid #000; padding: 5px; text-align: right;">SGST</td>
+                <td style="border: 1px solid #000; padding: 5px;">₹${(totalGst / 2).toFixed(2)}</td>
+            </tr>
+            <tr style="font-weight: bold; background: #f9f9f9;">
                 <td colspan="${isGst ? 5 : 4}" style="border: 1px solid #000; padding: 5px; text-align: right;">Grand Total</td>
                 <td style="border: 1px solid #000; padding: 5px;">₹${grandTotal.toFixed(0)}</td>
             </tr>
@@ -818,7 +830,8 @@ function updateSaleDashboard() {
                 <td style="border: 1px solid #000; padding: 5px;">₹${unpaid.toFixed(0)}</td>
             </tr>
             </tbody>
-        </table>
+        </table>`;
+
 
         <div style="text-align: center; margin-top: 15px; border: 1px dashed #999; padding: 10px;">
             <p style="margin: 0 0 10px 0; font-size: 15px;">Scan to Pay: ₹${paid.toFixed(0)}</p>
