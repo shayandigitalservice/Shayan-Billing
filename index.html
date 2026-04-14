@@ -474,9 +474,16 @@ document.addEventListener("DOMContentLoaded", function(){
                 }
     }
 });
+ function goToSubscriptions() {
+    if(document.getElementById("expiry-screen")) {
+        document.getElementById("expiry-screen").style.display = "none";
+    }
+    document.getElementById("auth-flow").classList.remove("hidden");
+    document.getElementById("step-reg").classList.add("hidden");
+    document.getElementById("step-plans").classList.remove("hidden");
+}
+   
 </script>
-
-
 <script>
 // --- BILLING SYSTEM CORE ---
 function initBillingSystem() {
