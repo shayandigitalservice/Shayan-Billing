@@ -634,14 +634,75 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
 
 
     document.getElementById("generateBillBtn").addEventListener("click", function(){
-        if(items.length===0) return alert("Add items");
-        let bill = document.getElementById("bill");
-        total = items.reduce((a,b)=>a+b.t,0);
-        let paid = +document.getElementById("amtPaid").value || total;
-        let invoiceNo = invoiceCounter++; localStorage.setItem("invoiceCounter", invoiceCounter);
-        bill.innerHTML = `<b>${shopInput.value}</b><br>Inv: ${invoiceNo}<hr>Total: ₹${total}<br>Paid: ₹${paid}`;
-        items = []; tableBody.innerHTML = ""; liveTotal = 0; liveTotalDisplay.innerText = "0";
+    if(items.length===0) return alert("Add items");
+    
+    let bill = document.getElementById("bill");
+    let isGst = localStorage.getItem("gstEnabled") === "true";
+    let shopGstin = localStorage.getItem("gstin") || "";
+    
+    // Calculation Logic
+    let totalTaxable = items.reduce((s, i) => s + i.taxable, 0);
+    let totalGst = items.reduce((s, i) => s + i.gstAmt, 0);
+    let grandTotal = totalTaxable + totalGst;
+    let paid = +document.getElementById("amtPaid").value || grandTotal;
+    
+    let invoiceNo = invoiceCounter++; 
+    localStorage.setItem("invoiceCounter", invoiceCounter);
+
+    // Bill Header
+    let html = `<div style="text-align:center;">
+                    <b style="font-size:18px;">${localStorage.getItem("shop")}</b><br>
+                    <small>${localStorage.getItem("address")}</small><br>
+                    <small>Mob: ${localStorage.getItem("phone")}</small><br>`;
+    
+    if(isGst && shopGstin) {
+        html += `<small><b>GSTIN: ${shopGstin}</b></small><br>`;
+    }
+    
+    html += `<hr><b>${isGst ? 'TAX INVOICE' : 'CASH MEMO'}</b><hr></div>`;
+    html += `<div style="display:flex; justify-content:space-between; font-size:12px;">
+                <span>Inv: #${invoiceNo}</span>
+                <span>Date: ${new Date().toLocaleDateString()}</span>
+             </div><hr>`;
+
+    // Items Table
+    html += `<table style="width:100%; font-size:12px; border-collapse:collapse;">
+                <tr style="border-bottom:1px solid #eee;">
+                    <th style="text-align:left;">Item</th>
+                    <th>Qty</th>
+                    <th style="text-align:right;">Total</th>
+                </tr>`;
+    
+    items.forEach(i => {
+        html += `<tr>
+                    <td>${i.p} ${isGst ? '<br><small>(Tax '+i.gstP+'%)</small>' : ''}</td>
+                    <td style="text-align:center;">${i.q}</td>
+                    <td style="text-align:right;">${i.t.toFixed(2)}</td>
+                 </tr>`;
     });
+    html += `</table><hr>`;
+
+    // Totals & GST Breakdown
+    html += `<div style="text-align:right; font-size:13px;">`;
+    if(isGst && totalGst > 0) {
+        html += `Taxable Value: ₹${totalTaxable.toFixed(2)}<br>`;
+        html += `CGST (${(totalGst > 0 ? '9%' : '0%')}): ₹${(totalGst/2).toFixed(2)}<br>`; // Example half logic
+        html += `SGST (${(totalGst > 0 ? '9%' : '0%')}): ₹${(totalGst/2).toFixed(2)}<br>`;
+    }
+    html += `<b style="font-size:16px;">Grand Total: ₹${grandTotal.toFixed(2)}</b><br>`;
+    html += `Paid: ₹${paid.toFixed(2)}<hr></div>`;
+    
+    html += `<div style="text-align:center;"><small>Thank You! Visit Again</small></div>`;
+
+    bill.innerHTML = html;
+    
+    // Reset for next bill
+    items = []; 
+    document.getElementById("tableBody").innerHTML = ""; 
+    liveTotal = 0; 
+    document.getElementById("liveCurrentTotal").innerText = "0";
+});
+
     loadShopDisplay();
 }
 // System functions ko end mein rakhein
