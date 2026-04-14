@@ -277,10 +277,6 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
     <button onclick="tempResetCheck()" class="btn-blue" style="background:#ef4444; margin-top:50px;">Logout (MPIN Lock)</button>
     <p style="text-align:center; font-size:10px; color:gray;">(Tip: Click Logout 3x to Reset during testing)</p>
 </div>
-
-
-
-
 <script>
 // --- FIREBASE CONFIG ---
 const firebaseConfig = {
@@ -324,23 +320,18 @@ function goToSubscriptions() {
 
 // --- AUTH & RESTORE LOGIC ---
 function requestActivation() {
-    let name = document.getElementById("uName").value, 
-        addr = document.getElementById("uAddr").value, 
-        mob = document.getElementById("uMob").value;
-
+    let name = document.getElementById("uName").value, addr = document.getElementById("uAddr").value, mob = document.getElementById("uMob").value;
     if(!name || !addr || mob.length < 10) return alert("Details bhariye!");
 
     db.ref('users/' + mob).once('value').then((snap) => {
         let existing = snap.val();
         let userData = { name, addr, mob, regDate: new Date().toLocaleString() };
-        
         localStorage.setItem("current_user_mob", mob);
         localStorage.setItem("user_db_" + mob, JSON.stringify({...existing, ...userData}));
 
         db.ref('users/' + mob).update(userData).then(() => {
-            if(existing && existing.appID) alert("Purana account mil gaya! Verify ID karke restore karein.");
+            if(existing && existing.appID) alert("Welcome back! Verify ID to restore.");
             else window.open(`https://wa.me/${DIST_WA}?text=${encodeURIComponent("*Verification Request*\nName: "+name+"\nAddress: "+addr+"\nMobile: "+mob)}`);
-            
             document.getElementById("step-reg").classList.add("hidden");
             document.getElementById("step-lock").classList.remove("hidden");
         });
@@ -350,7 +341,6 @@ function requestActivation() {
 function verifyApprovalID() {
     let input = document.getElementById("inputApprovalID").value.trim();
     let mob = localStorage.getItem("current_user_mob");
-
     db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
         if(data && data.appID === input) {
@@ -371,36 +361,27 @@ function verifyApprovalID() {
 }
 
 function verifySubKey() {
-    let input = document.getElementById("inputSubKey").value.trim();
-    let mob = localStorage.getItem("current_user_mob");
-
+    let input = document.getElementById("inputSubKey").value.trim(), mob = localStorage.getItem("current_user_mob");
     db.ref('users/' + mob).once('value').then((snap) => {
         let data = snap.val();
-        if(data && data.subKey === input) {
-            alert("Key Verified!");
-            activateSystem(data.planDays || 30);
-        } else { alert("Invalid Key!"); }
+        if(data && data.subKey === input) { alert("Key Verified!"); activateSystem(data.planDays || 30); }
+        else { alert("Invalid Key!"); }
     });
 }
 
 function activateSystem(days) {
     let mob = localStorage.getItem("current_user_mob");
     let expiry = (days === "restored") ? parseInt(localStorage.getItem("restored_expiry")) : new Date().getTime() + (days * 24 * 60 * 60 * 1000);
-
     localStorage.setItem("shayan_auth", JSON.stringify({active:true, exp:expiry}));
-    db.ref('users/' + mob).update({ expiryDate: expiry }).then(() => {
-        alert("Software Activated!");
-        location.reload();
-    });
+    db.ref('users/' + mob).update({ expiryDate: expiry }).then(() => { alert("Activated!"); location.reload(); });
 }
 
-// --- SECURITY & MPIN ---
+// --- MPIN & SECURITY ---
 function loginWithMPIN() {
-    let pin = document.getElementById("inputMPIN").value;
-    let mob = localStorage.getItem("current_user_mob");
+    let pin = document.getElementById("inputMPIN").value, mob = localStorage.getItem("current_user_mob");
     db.ref('users/' + mob).once('value', (snap) => {
         let d = snap.val();
-        if(d && d.suspended) return alert("Account Blocked! Contact Admin.");
+        if(d && d.suspended) return alert("Account Blocked!");
         if(pin === localStorage.getItem("user_mpin")) {
             let auth = JSON.parse(localStorage.getItem("shayan_auth"));
             auth.active = true;
@@ -418,24 +399,8 @@ function finishMPINSetup() {
     } else { alert("Enter 4-digit PIN"); }
 }
 
-function forgotMPINFlow() {
-    document.getElementById("step-mpin-login").classList.add("hidden");
-    document.getElementById("step-mpin-reset").classList.remove("hidden");
-}
-
-function resetMPIN() {
-    let id = document.getElementById("resetAppID").value, key = document.getElementById("resetKey").value, newPin = document.getElementById("newMPIN").value;
-    if(id === localStorage.getItem("temp_approval_id") && key === localStorage.getItem("temp_sub_key")) {
-        if(newPin.length === 4) {
-            localStorage.setItem("user_mpin", newPin);
-            alert("MPIN Reset Successful!");
-            location.reload();
-        } else { alert("Enter 4 digits!"); }
-    } else { alert("Invalid ID or Key!"); }
-}
-
 // --- ADMIN SYSTEM ---
-function checkAdminFlow(val) { if(val === "shayan@321") document.getElementById("admin-panel").style.display = "block"; }
+function checkAdminFlow(v) { if(v === "shayan@321") document.getElementById("admin-panel").style.display = "block"; }
 function closeAdmin() { document.getElementById("admin-panel").style.display = "none"; }
 
 function admSearchUser() {
@@ -472,44 +437,6 @@ function admGenKey() {
     db.ref('users/' + mob).update({subKey:key, planDays:days}).then(() => { document.getElementById("admShowKey").innerText = "Key: " + key; });
 }
 
-// --- SYSTEM LOGIC ---
-document.addEventListener("DOMContentLoaded", function(){
-    let auth = JSON.parse(localStorage.getItem("shayan_auth"));
-    let mpin = localStorage.getItem("user_mpin");
-    let mob = localStorage.getItem("current_user_mob");
-    let userData = mob ? JSON.parse(localStorage.getItem("user_db_" + mob)) : null;
-
-    if(auth && mpin) {
-        if(userData && userData.suspended) {
-            document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:100px;'>Your account has been SUSPENDED.<br>Contact Muksidul: 9957548361</h1>";
-            return;
-        }
-        if(new Date().getTime() > auth.exp) {
-            document.getElementById("auth-flow").classList.add("hidden");
-            document.getElementById("main-billing").classList.add("hidden");
-            if(document.getElementById("expiry-screen")) document.getElementById("expiry-screen").style.display = "flex";
-            else { alert("Plan Expired!"); goToSubscriptions(); }
-            return;
-        }
-        if(auth.active) {
-            document.getElementById("auth-flow").classList.add("hidden");
-            document.getElementById("main-billing").classList.remove("hidden");
-            let left = Math.ceil((auth.exp - new Date().getTime()) / (1000*60*60*24));
-            document.getElementById("timer-badge").innerText = (left > 0 ? left : 0) + " Days Remaining";
-            initBillingSystem();
-        } else {
-            document.getElementById("step-reg").classList.add("hidden");
-            document.getElementById("step-mpin-login").classList.remove("hidden");
-        }
-    }
-});
-
-// --- BILLING LOGIC ---
-function initBillingSystem() {
-    // Paste all your item add/table/print/stock logic here
-    loadShopDisplay();
-}
-
 function selectPlan(type, days, name, price) {
     localStorage.setItem("temp_plan_days", days);
     if(type === 'trial') {
@@ -524,32 +451,46 @@ function selectPlan(type, days, name, price) {
     }
 }
 
-function tempResetCheck() {
-    if(confirm("Confirm Full Reset?")) { localStorage.clear(); location.reload(); }
-}
-
-function logoutToMPIN() {
+// --- DOM READY CHECK ---
+document.addEventListener("DOMContentLoaded", function(){
     let auth = JSON.parse(localStorage.getItem("shayan_auth"));
-    if(auth) { auth.active = false; localStorage.setItem("shayan_auth", JSON.stringify(auth)); }
-    location.reload();
-}
+    let mpin = localStorage.getItem("user_mpin");
+    let mob = localStorage.getItem("current_user_mob");
+    let userData = mob ? JSON.parse(localStorage.getItem("user_db_" + mob)) : null;
 
+    if(auth && mpin) {
+        if(userData && userData.suspended) {
+            document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:100px;'>Account Suspended.</h1>";
+            return;
+        }
+        if(new Date().getTime() > auth.exp) {
+            document.getElementById("auth-flow").classList.add("hidden");
+            document.getElementById("main-billing").classList.add("hidden");
+            if(document.getElementById("expiry-screen")) document.getElementById("expiry-screen").style.display = "flex";
+            else { alert("Plan Expired!"); goToSubscriptions(); }
+            return;
+        }
+        if(auth.active) {
+            document.getElementById("auth-flow").classList.add("hidden");
+            document.getElementById("main-billing").classList.remove("hidden");
+            initBillingSystem();
+        } else {
+            document.getElementById("step-reg").classList.add("hidden");
+            document.getElementById("step-mpin-login").classList.remove("hidden");
+        }
+    }
+});
 
 // --- BILLING SYSTEM CORE ---
 function initBillingSystem() {
-    let items=[];
-    let total=0;
-    let liveTotal = 0;
+    let items=[]; let total=0; let liveTotal = 0;
     let invoiceCounter = parseInt(localStorage.getItem("invoiceCounter"))||1;
     let stock = JSON.parse(localStorage.getItem("stock"))||{};
     let stockHistory = JSON.parse(localStorage.getItem("stockHistory"))||[];
 
-    const shopInput = document.getElementById("shop");
-    const addressInput = document.getElementById("address");
-    const phoneInput = document.getElementById("phone");
-    const upiInput = document.getElementById("upiId");
-    const saveShopBtn = document.getElementById("saveShopBtn");
-    const liveTotalDisplay = document.getElementById("liveCurrentTotal");
+    const shopInput = document.getElementById("shop"), addressInput = document.getElementById("address");
+    const phoneInput = document.getElementById("phone"), upiInput = document.getElementById("upiId");
+    const saveShopBtn = document.getElementById("saveShopBtn"), liveTotalDisplay = document.getElementById("liveCurrentTotal");
 
     shopInput.value = localStorage.getItem("shop")||"";
     addressInput.value = localStorage.getItem("address")||"";
@@ -564,12 +505,9 @@ function initBillingSystem() {
         alert("Shop details saved!");
     });
 
-    const stockProductInput = document.getElementById("stockProduct");
-    const stockQtyInput = document.getElementById("stockQty");
-    const addStockBtn = document.getElementById("addStockBtn");
-    const stockTableBody = document.getElementById("stockTableBody");
+    const stockProductInput = document.getElementById("stockProduct"), stockQtyInput = document.getElementById("stockQty");
+    const addStockBtn = document.getElementById("addStockBtn"), stockTableBody = document.getElementById("stockTableBody");
 
-    // RENDER STOCK WITH INLINE EDIT
     function renderStock(){
         stockTableBody.innerHTML = "";
         for(let p in stock){
@@ -577,19 +515,10 @@ function initBillingSystem() {
             let lastUpdate = updates[updates.length-1]?.date || "";
             let color = stock[p]<=5 ? "red" : "green";
             let row = stockTableBody.insertRow();
-            
-            // Editable Item Name
-            let cellName = row.insertCell(0);
-            cellName.innerText = p;
-            cellName.contentEditable = "true";
-            cellName.onblur = function() { updateStockData(p, this.innerText, 'name'); };
-
-            // Editable Stock Quantity
-            let cellQty = row.insertCell(1);
-            cellQty.innerHTML = `<span style="color:${color}">${stock[p]}</span>`;
-            cellQty.contentEditable = "true";
-            cellQty.onblur = function() { updateStockData(p, this.innerText, 'qty'); };
-
+            let cName = row.insertCell(0); cName.innerText = p; cName.contentEditable = "true";
+            cName.onblur = function() { updateStockData(p, this.innerText, 'name'); };
+            let cQty = row.insertCell(1); cQty.innerHTML = `<span style="color:${color}">${stock[p]}</span>`;
+            cQty.contentEditable = "true"; cQty.onblur = function() { updateStockData(p, this.innerText, 'qty'); };
             row.insertCell(2).innerText = lastUpdate ? new Date(lastUpdate).toLocaleString() : "-";
         }
     }
@@ -597,243 +526,77 @@ function initBillingSystem() {
     function updateStockData(oldName, newValue, type) {
         if(type === 'name') {
             if(newValue !== oldName && newValue.trim() !== "") {
-                stock[newValue] = stock[oldName];
-                delete stock[oldName];
+                stock[newValue] = stock[oldName]; delete stock[oldName];
                 stockHistory.forEach(h => { if(h.product === oldName) h.product = newValue; });
             }
         } else if(type === 'qty') {
-            let n = parseInt(newValue);
-            if(!isNaN(n)) stock[oldName] = n;
+            let n = parseInt(newValue); if(!isNaN(n)) stock[oldName] = n;
         }
         localStorage.setItem("stock", JSON.stringify(stock));
         localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
-        renderStock();
-        renderProductDropdown();
+        renderStock(); renderProductDropdown();
     }
-
     renderStock();
 
     addStockBtn.addEventListener("click", function(){
-        let p = stockProductInput.value.trim();
-        let q = +stockQtyInput.value;
-        if(!p || !q){ alert("Fill all fields"); return; }
+        let p = stockProductInput.value.trim(), q = +stockQtyInput.value;
+        if(!p || !q) return alert("Fill all fields");
         stock[p] = (stock[p] || 0) + q;
         stockHistory.push({product:p, qtyAdded:q, type:"Added", date:new Date().toISOString()});
         localStorage.setItem("stock", JSON.stringify(stock));
         localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
         stockProductInput.value=""; stockQtyInput.value="";
-        renderStock();
-        renderProductDropdown();
+        renderStock(); renderProductDropdown();
     });
 
-    const productDropdown = document.getElementById("productDropdown");
-    const productSearch = document.getElementById("productSearch");
-
+    const productDropdown = document.getElementById("productDropdown"), productSearch = document.getElementById("productSearch");
     function renderProductDropdown(){
         productDropdown.innerHTML = "";
-        let productList = [...new Set(Object.keys(stock))];
-        productList.forEach(p=>{
-            let option = document.createElement("option");
-            option.value = p; option.text = p;
-            productDropdown.appendChild(option);
+        Object.keys(stock).forEach(p=>{
+            let opt = document.createElement("option"); opt.value = p; opt.text = p;
+            productDropdown.appendChild(opt);
         });
     }
     renderProductDropdown();
 
     productSearch.addEventListener("input", function(){
         let val = this.value.toLowerCase();
-        let options = Array.from(productDropdown.options);
-        let match = options.find(o=>o.value.toLowerCase().includes(val));
+        let match = Array.from(productDropdown.options).find(o=>o.value.toLowerCase().includes(val));
         if(match) productDropdown.value = match.value;
     });
 
-    document.getElementById("downloadStockBtn").addEventListener("click", function(){
-        let html = `<table border="1"><tr><th>Product</th><th>Available Qty</th><th>Last Updated</th></tr>`;
-        for(let p in stock){
-            let updates = stockHistory.filter(h=>h.product===p);
-            let lastUpdate = updates[updates.length-1]?.date||"";
-            html += `<tr><td>${p}</td><td>${stock[p]}</td><td>${new Date(lastUpdate).toLocaleString()}</td></tr>`;
-        }
-        html += `</table>`;
-        let blob = new Blob([html], {type:"application/vnd.ms-excel"});
-        let a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "stock.xlsx";
-        a.click();
-    });
-
-    const qtyInput = document.getElementById("qty");
-    const priceInput = document.getElementById("price");
-    const addItemBtn = document.getElementById("addItemBtn");
-    const tableBody = document.getElementById("tableBody");
+    const qtyInput = document.getElementById("qty"), priceInput = document.getElementById("price");
+    const addItemBtn = document.getElementById("addItemBtn"), tableBody = document.getElementById("tableBody");
 
     addItemBtn.addEventListener("click", function(){
-        let p = productDropdown.value.trim();
-        let q = +qtyInput.value;
-        let pr = +priceInput.value;
-        if(!p || !q || !pr){ alert("Fill all fields"); return; }
-        if(stock[p]===undefined){ alert("Product not in stock"); return; }
-        if(q>stock[p]){ alert(`Stock not sufficient for ${p}. Available: ${stock[p]}`); return; }
-
+        let p = productDropdown.value, q = +qtyInput.value, pr = +priceInput.value;
+        if(!p || !q || !pr) return alert("Fill all fields");
+        if(q > stock[p]) return alert(`Low stock. Available: ${stock[p]}`);
         stock[p]-=q;
         stockHistory.push({product:p, qtyAdded:-q, type:"Sold", date:new Date().toISOString()});
         localStorage.setItem("stock", JSON.stringify(stock));
         localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
         renderStock();
-
-        let t = q*pr;
-        let itemIndex = items.length;
-        items.push({p,q,pr,t});
-        
-        liveTotal += t;
-        liveTotalDisplay.innerText = liveTotal;
-
-        let row=tableBody.insertRow();
-        row.insertCell(0).innerText=items.length;
-        
-        // Editable Billing Name
-        let cName = row.insertCell(1);
-        cName.innerText = p;
-        cName.contentEditable = "true";
-        cName.onblur = function() { editBillItem(itemIndex, this.innerText, 'p'); };
-
-        // Editable Billing Qty
-        let cQty = row.insertCell(2);
-        cQty.innerText = q;
-        cQty.contentEditable = "true";
-        cQty.onblur = function() { editBillItem(itemIndex, this.innerText, 'q'); };
-
-        // Editable Billing Rate
-        let cRate = row.insertCell(3);
-        cRate.innerText = pr;
-        cRate.contentEditable = "true";
-        cRate.onblur = function() { editBillItem(itemIndex, this.innerText, 'pr'); };
-
-        row.insertCell(4).innerText=t;
-        productSearch.value=""; qtyInput.value=""; priceInput.value="";
+        let t = q*pr; let idx = items.length; items.push({p,q,pr,t});
+        liveTotal += t; liveTotalDisplay.innerText = liveTotal;
+        let row=tableBody.insertRow(); row.insertCell(0).innerText=items.length;
+        row.insertCell(1).innerText=p; row.insertCell(2).innerText=q;
+        row.insertCell(3).innerText=pr; row.insertCell(4).innerText=t;
+        qtyInput.value=""; priceInput.value="";
     });
-
-    function editBillItem(index, val, field) {
-        let item = items[index];
-        if(field === 'p') item.p = val;
-        if(field === 'q') item.q = parseInt(val) || 0;
-        if(field === 'pr') item.pr = parseFloat(val) || 0;
-        
-        item.t = item.q * item.pr;
-        
-        // Recalculate Live Total
-        liveTotal = 0;
-        tableBody.innerHTML = "";
-        items.forEach((it, idx) => {
-            liveTotal += it.t;
-            let row = tableBody.insertRow();
-            row.insertCell(0).innerText = idx + 1;
-            let n = row.insertCell(1); n.innerText = it.p; n.contentEditable = "true"; n.onblur = function(){ editBillItem(idx, this.innerText, 'p'); };
-            let q = row.insertCell(2); q.innerText = it.q; q.contentEditable = "true"; q.onblur = function(){ editBillItem(idx, this.innerText, 'q'); };
-            let r = row.insertCell(3); r.innerText = it.pr; r.contentEditable = "true"; r.onblur = function(){ editBillItem(idx, this.innerText, 'pr'); };
-            row.insertCell(4).innerText = it.t;
-        });
-        liveTotalDisplay.innerText = liveTotal;
-    }
-
-    function getInvoiceNumber(){ let num = invoiceCounter; invoiceCounter++; localStorage.setItem("invoiceCounter", invoiceCounter); return num; }
 
     document.getElementById("generateBillBtn").addEventListener("click", function(){
-        if(items.length===0){ alert("Add items first"); return; }
+        if(items.length===0) return alert("Add items");
         let bill = document.getElementById("bill");
-        total=0; items.forEach(i=> total+=i.t);
-        
-        let paid = parseFloat(document.getElementById("amtPaid").value) || total;
-        let unpaid = total - paid;
-        if(unpaid < 0) unpaid = 0;
-
-        let invoiceNo = getInvoiceNumber();
-        let dateISO = new Date().toISOString();
-        let paymentMode = document.getElementById("payment").value;
-        let upiId = upiInput.value.trim();
-
-        let html=`<div class="invoice">Invoice No: ${invoiceNo}</div><div class="clear"></div>
-        <b>${shopInput.value}</b><br>${addressInput.value}<br>Phone: ${phoneInput.value}<br>
-        Date: ${new Date(dateISO).toLocaleString()}<br>
-        Customer: ${document.getElementById("customer").value}<br>
-        Payment Mode: ${paymentMode}<hr>
-        <div style="overflow-x:auto;"><table>
-        <tr><th>No</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>`;
-        items.forEach((i,index)=>{
-            html+=`<tr><td>${index+1}</td><td>${i.p}</td><td>${i.q}</td><td>${i.pr}</td><td>${i.t}</td></tr>`;
-        });
-        html+=`<tr class="totalRow"><td colspan="4">Grand Total</td><td>₹${total}</td></tr>`;
-        html+=`<tr class="totalRow" style="color:green;"><td colspan="4">Paid Amount</td><td>₹${paid}</td></tr>`;
-        html+=`<tr class="totalRow" style="color:red;"><td colspan="4">Unpaid Balance</td><td>₹${unpaid}</td></tr></table></div>`;
-        
-        if(upiId !== "" && paid > 0){
-            let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('upi://pay?pa='+upiId+'&pn='+shopInput.value+'&am='+paid+'&cu=INR')}`;
-            html += `<div class="qr-container"><p>Scan to Pay: ₹${paid}</p><img src="${qrUrl}" alt="UPI QR Code"></div>`;
-        }
-
-        bill.innerHTML = html;
-
-        let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
-        saleHistory.push({ invoiceNo, total, paid, unpaid, date: dateISO, customer: document.getElementById("customer").value, items: [...items] });
-        localStorage.setItem("saleHistory", JSON.stringify(saleHistory));
-
-        updateSaleSummary();
-        items = [];
-        tableBody.innerHTML = "";
-        document.getElementById("amtPaid").value = "";
-        liveTotal = 0;
-        liveTotalDisplay.innerText = "0";
+        total = items.reduce((a,b)=>a+b.t,0);
+        let paid = +document.getElementById("amtPaid").value || total;
+        let invoiceNo = invoiceCounter++; localStorage.setItem("invoiceCounter", invoiceCounter);
+        bill.innerHTML = `<b>${shopInput.value}</b><br>Inv: ${invoiceNo}<hr>Total: ₹${total}<br>Paid: ₹${paid}`;
+        items = []; tableBody.innerHTML = ""; liveTotal = 0; liveTotalDisplay.innerText = "0";
     });
-
-    document.getElementById("printBillBtn").addEventListener("click", function(){
-        let content = document.getElementById("bill").innerHTML;
-        if(!content) return alert("Generate bill first");
-        let mode = document.getElementById("printMode").value;
-        let width=400, height=700;
-        if(mode=="A4"){width=800;height=1100;}
-        let win = window.open('','',`width=${width},height=${height}`);
-        win.document.write(`<html><head><title>Print Bill</title><style>
-        body{font-family:monospace;padding:10px;text-align:center;} table{width:100%;border-collapse:collapse;} td,th{border:1px solid #000;padding:5px;text-align:center;} .totalRow td{font-weight:bold;} .invoice{float:right;} .clear{clear:both;} .qr-container{margin-top:10px;} .qr-container img{width:120px;}
-        </style></head><body>${content}</body></html>`);
-        win.document.close(); win.print();
-    });
-
-    document.getElementById("sendWhatsAppBtn").addEventListener("click", function(){
-        let text="🧾 BILL RECEIPT\n\n"+document.getElementById("bill").innerText;
-        window.open("https://wa.me/?text="+encodeURIComponent(text));
-    });
-
-    document.getElementById("downloadHistoryBtn").addEventListener("click", function(){
-        let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
-        if(saleHistory.length === 0) return alert("No history found");
-        let html = `<table border="1"><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Total</th><th>Paid</th><th>Unpaid</th></tr>`;
-        saleHistory.forEach(s => {
-            html += `<tr><td>${new Date(s.date).toLocaleDateString()}</td><td>${s.invoiceNo}</td><td>${s.customer}</td><td>${s.total}</td><td>${s.paid}</td><td>${s.unpaid}</td></tr>`;
-        });
-        html += `</table>`;
-        let blob = new Blob([html], {type:"application/vnd.ms-excel"});
-        let a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "Sale_History.xlsx"; a.click();
-    });
-
-    function updateSaleSummary(){
-        let history = JSON.parse(localStorage.getItem("saleHistory")) || [];
-        let today = new Date();
-        let tTotal = 0, wTotal = 0, mTotal = 0;
-        history.forEach(s => {
-            let sDate = new Date(s.date);
-            if(sDate.toDateString() === today.toDateString()) tTotal += s.total;
-            let diffDays = Math.ceil(Math.abs(today - sDate) / (1000 * 60 * 60 * 24));
-            if(diffDays <= 7) wTotal += s.total;
-            if(sDate.getMonth() === today.getMonth() && sDate.getFullYear() === today.getFullYear()) mTotal += s.total;
-        });
-        document.getElementById("saleToday").innerText = "₹" + tTotal;
-        document.getElementById("saleWeekly").innerText = "₹" + wTotal;
-        document.getElementById("saleMonthly").innerText = "₹" + mTotal;
-    }
-    updateSaleSummary();
+    loadShopDisplay();
 }
 </script>
+
 </body>
     </html>
