@@ -761,25 +761,46 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
     });
 
     // --- WHATSAPP SHARE LOGIC ---
-    document.getElementById("sendWhatsAppBtn").addEventListener("click", function() {
-        const shopName = localStorage.getItem("shop") || "Shop";
+        document.getElementById("sendWhatsAppBtn").addEventListener("click", function() {
+        const shopName = localStorage.getItem("shop") || "Our Shop";
         const customer = document.getElementById("customer").value || "Customer";
+        const upiId = localStorage.getItem("upiId");
         const billBox = document.getElementById("bill");
         
         if (!billBox.innerText) return alert("Pehle bill generate karein!");
+        if (!upiId) return alert("Settings mein UPI ID bharo pehle!");
 
-        // Bill ka text format nikaalna
-        let waText = `*${shopName} - Invoice* \n`;
-        waText += `Customer: ${customer} \n`;
+        // 1. Bill Details nikaalna
+        let totalAmt = 0;
+        let itemText = "";
+        items.forEach((i, idx) => {
+            itemText += `${idx + 1}. ${i.p} x ${i.q} = ₹${i.t.toFixed(0)}\n`;
+            totalAmt += i.t;
+        });
+
+        // 2. UPI Intent Link banana (Isse customer direct pay kar payega)
+        // Link format: upi://pay?pa=YOURID&am=AMOUNT&tn=BILLNO
+        const paymentLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(shopName)}&am=${totalAmt.toFixed(0)}&cu=INR`;
+
+        // 3. WhatsApp Message taiyar karna
+        let waText = `*${shopName} - Digital Receipt* 📄\n`;
         waText += `--------------------------\n`;
-        waText += billBox.innerText; // Poora bill text copy karega
-        waText += `\n--------------------------\n`;
-        waText += `Thank you for visiting!`;
+        waText += `*Customer:* ${customer}\n`;
+        waText += `*Date:* ${new Date().toLocaleDateString()}\n\n`;
+        waText += `*Items:*\n${itemText}`;
+        waText += `--------------------------\n`;
+        waText += `*Total Amount: ₹${totalAmt.toFixed(0)}*\n\n`;
+        waText += `*Click below to Pay Now:* 👇\n`;
+        waText += `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(paymentLink)}\n\n`;
+        waText += `*(Ya fir is link ko browser mein kholein:)* \n${paymentLink}\n\n`;
+        waText += `Thank you! Visit again. 🙏`;
 
-        const phone = document.getElementById("phone").value || ""; 
-        const url = `https://wa.me/${phone}?text=${encodeURIComponent(waText)}`;
-        window.open(url, '_blank');
+        // 4. WhatsApp kholna
+        const customerPhone = document.getElementById("phone").value;
+        const finalUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(waText)}`;
+        window.open(finalUrl, '_blank');
     });
+
 
     loadShopDisplay();
 }
