@@ -761,6 +761,7 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
     });
 
         // --- WHATSAPP SHARE LOGIC (FINAL FIXED) ---
+    docu    // --- WHATSAPP SHARE LOGIC (PAID AMOUNT ONLY) ---
     document.getElementById("sendWhatsAppBtn").onclick = function() {
         const billBox = document.getElementById("bill");
         const upiId = localStorage.getItem("upiId");
@@ -768,39 +769,32 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
         const customer = document.getElementById("customer").value || "Customer";
         const customerPhone = document.getElementById("phone").value;
 
-        // 1. Check if bill exists
-        if (!billBox || billBox.innerText === "") {
-            return alert("Pehle 'Generate Bill' dabayein!");
-        }
-        if (!upiId) {
-            return alert("Settings (⚙️) mein UPI ID bhariye!");
-        }
+        if (!billBox || billBox.innerHTML === "") return alert("Pehle 'Generate Bill' dabayein!");
+        if (!upiId) return alert("Settings mein UPI ID bhariye!");
 
-        // 2. Bill ke text se Grand Total dhundna (Jo bill pe dikh raha hai wahi jayega)
+        // Bill ke text se "Paid Amount" dhundna
         const billText = billBox.innerText;
-        const match = billText.match(/Grand Total\s*[:₹]?\s*(\d+)/i);
-        const totalAmt = match ? match[1] : "0";
+        const match = billText.match(/Paid Amount\s*[:₹]?\s*(\d+)/i);
+        const paidAmt = match ? match[1] : "0";
 
-        if (totalAmt === "0") return alert("Amount zero hai, check karein!");
+        if (paidAmt === "0" || paidAmt === "") {
+            return alert("Paid amount zero hai, please amount check karein!");
+        }
 
-        // 3. WhatsApp Message taiyar karna
-        let waText = `*${shopName} - Digital Receipt* 📄\n`;
+        // WhatsApp Message with Paid Amount Link
+        const paymentLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(shopName)}&am=${paidAmt}&cu=INR`;
+        
+        let waText = `*${shopName} - Payment Request* 📄\n`;
         waText += `--------------------------\n`;
         waText += `*Customer:* ${customer}\n`;
-        waText += `*Total Amount: ₹${totalAmt}*\n`;
+        waText += `*Payable Amount: ₹${paidAmt}*\n`;
         waText += `--------------------------\n\n`;
-        waText += `*Tap to Pay Now:* 👇\n`;
-        
-        // Sabse best payment link format
-        const paymentLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(shopName)}&am=${totalAmt}&cu=INR`;
+        waText += `*Tap below to Pay via UPI:* 👇\n`;
         waText += `${paymentLink}\n\n`;
-        
-        waText += `*(GPay, PhonePe, ya Paytm se pay karein)*\n\n`;
-        waText += `Thank you! Visit again. 🙏`;
+        waText += `*(GPay, PhonePe, Paytm sab chalega)*\n\n`;
+        waText += `Thank you! 🙏`;
 
-        // 4. WhatsApp kholna
-        const finalUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(waText)}`;
-        window.open(finalUrl, '_blank');
+        window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(waText)}`, '_blank');
     };
 
 
