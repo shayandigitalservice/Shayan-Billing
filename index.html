@@ -593,27 +593,38 @@ function updateSaleDashboard() {
 }
 
 // Software load hote hi chal jaye
-updateSaleDashboard();
+function updateSaleDashboard() {
+    let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
+    let now = new Date();
+    let today = 0, weekly = 0, monthly = 0;
 
-    // --- 1. DOWNLOAD STOCK EXCEL (CSV Format) ---
-    document.getElementById("downloadStockBtn").onclick = function() {
-        if (Object.keys(stock).length === 0) return alert("Stock khali hai!");
+    saleHistory.forEach(sale => {
+        // Number() use karein taaki NaN error na aaye
+        let amt = Number(sale.amount) || 0; 
+        let saleDate = new Date(sale.date);
         
-        let csvContent = "Product,Available Qty\n"; // Header
-        for (let p in stock) {
-            csvContent += `${p},${stock[p]}\n`;
-        }
+        if (!isNaN(saleDate.getTime())) {
+            let diffDays = Math.floor((now - saleDate) / (1000 * 60 * 60 * 24));
 
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('hidden', '');
-        a.setAttribute('href', url);
-        a.setAttribute('download', 'Shayan_Stock_Report.csv');
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    };
+            // Today
+            if (saleDate.toDateString() === now.toDateString()) today += amt;
+            
+            // Weekly (Last 7 days)
+            if (diffDays <= 7) weekly += amt;
+            
+            // Monthly
+            if (saleDate.getMonth() === now.getMonth() && saleDate.getFullYear() === now.getFullYear()) {
+                monthly += amt;
+            }
+        }
+    });
+
+    // UI par update karein
+    document.getElementById("saleToday").innerText = "₹" + today.toFixed(0);
+    document.getElementById("saleWeekly").innerText = "₹" + weekly.toFixed(0);
+    document.getElementById("saleMonthly").innerText = "₹" + monthly.toFixed(0);
+}
+
 
     // --- 2. DOWNLOAD BILLING HISTORY ---
     document.getElementById("downloadHistoryBtn").onclick = function() {
@@ -740,7 +751,8 @@ updateSaleDashboard();
     let saleHistory = JSON.parse(localStorage.getItem("saleHistory")) || [];
     saleHistory.push({
         date: new Date().toISOString(),
-        amount: grandTotal
+        amount: Number(grandTotal)
+
     });
     localStorage.setItem("saleHistory", JSON.stringify(saleHistory));
     
