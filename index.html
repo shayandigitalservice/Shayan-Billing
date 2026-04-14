@@ -108,9 +108,30 @@ th, td { border: 1px solid #666; padding: 8px; font-size: 14px; text-align: cent
   table th, table td { padding: 6px; font-size: 12px; }
   .invoice { float: none; text-align: right; }
 }
+    /* Custom Notification Styling */
+#custom-alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    z-index: 10000;
+    display: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
 </style>
 </head>
 <body>
+<div id="custom-alert"></div>
 
 <div id="auth-flow" class="content-wrapper">
     <h1>Shayan Smart Billing</h1>
@@ -336,6 +357,23 @@ function loadShopDisplay() {
         document.getElementById("disp-shop-addr").innerText = a;
         document.getElementById("disp-shop-phone").innerText = "Phone: " + p;
     }
+}
+function showAlert(message, type = 'success') {
+    const alertBox = document.getElementById("custom-alert");
+    alertBox.innerText = message;
+    alertBox.style.display = "block";
+    
+    // Green for Success, Red for Error
+    if (type === 'success') {
+        alertBox.style.background = "#22c55e"; // Green
+    } else {
+        alertBox.style.background = "#ef4444"; // Red
+    }
+
+    // 3 second baad apne aap gayab ho jayega
+    setTimeout(() => {
+        alertBox.style.display = "none";
+    }, 3000);
 }
 
 function goToSubscriptions() {
