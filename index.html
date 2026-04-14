@@ -698,6 +698,29 @@ function updateSaleDashboard() {
     document.getElementById("saleMonthly").innerText = "₹" + monthly.toFixed(0);
 }
 
+    // --- 1. DOWNLOAD STOCK EXCEL (CSV Format) ---
+    document.getElementById("downloadStockBtn").onclick = function() {
+        let currentStock = JSON.parse(localStorage.getItem("stock")) || {};
+        if (Object.keys(currentStock).length === 0) {
+            return showAlert("Stock khali hai!", "error");
+        }
+        
+        let csvContent = "Product,Available Qty\n"; 
+        for (let p in currentStock) {
+            csvContent += `${p},${currentStock[p]}\n`;
+        }
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'Shayan_Stock_Report.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showAlert("Stock Excel Downloaded!", "success");
+    };
 
     // --- 2. DOWNLOAD BILLING HISTORY ---
     document.getElementById("downloadHistoryBtn").onclick = function() {
