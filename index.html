@@ -654,73 +654,107 @@ localStorage.setItem("gstin", document.getElementById("gstin").value);
 
 
     document.getElementById("generateBillBtn").addEventListener("click", function(){
-    if(items.length===0) return alert("Add items");
+    if(items.length === 0) return alert("Add items first!");
     
     let bill = document.getElementById("bill");
     let isGst = localStorage.getItem("gstEnabled") === "true";
     let shopGstin = localStorage.getItem("gstin") || "";
+    let upiId = localStorage.getItem("upiId") || "";
     
     // Calculation Logic
     let totalTaxable = items.reduce((s, i) => s + i.taxable, 0);
     let totalGst = items.reduce((s, i) => s + i.gstAmt, 0);
     let grandTotal = totalTaxable + totalGst;
     let paid = +document.getElementById("amtPaid").value || grandTotal;
+    let unpaid = grandTotal - paid;
     
     let invoiceNo = invoiceCounter++; 
     localStorage.setItem("invoiceCounter", invoiceCounter);
 
-    // Bill Header
-    let html = `<div style="text-align:center;">
-                    <b style="font-size:18px;">${localStorage.getItem("shop")}</b><br>
-                    <small>${localStorage.getItem("address")}</small><br>
-                    <small>Mob: ${localStorage.getItem("phone")}</small><br>`;
-    
-    if(isGst && shopGstin) {
-        html += `<small><b>GSTIN: ${shopGstin}</b></small><br>`;
-    }
-    
-    html += `<hr><b>${isGst ? 'TAX INVOICE' : 'CASH MEMO'}</b><hr></div>`;
-    html += `<div style="display:flex; justify-content:space-between; font-size:12px;">
-                <span>Inv: #${invoiceNo}</span>
-                <span>Date: ${new Date().toLocaleDateString()}</span>
-             </div><hr>`;
+    // --- Header Section (Pickup Roadways Style) ---
+    let html = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <b style="font-size: 20px; color: #1e40af;">${localStorage.getItem("shop") || 'Shop Name'}</b><br>
+                <span style="font-size: 13px; color: #64748b;">${localStorage.getItem("address") || 'Address Not Set'}</span><br>
+                <span style="font-size: 13px; color: #64748b;">Phone: ${localStorage.getItem("phone") || 'N/A'}</span><br>
+                ${isGst && shopGstin ? `<b style="font-size: 12px;">GSTIN: ${shopGstin}</b>` : ''}
+            </div>
+            <div style="text-align: right; font-size: 13px;">
+                <b style="font-size: 16px; color: #334155;">Invoice No: ${invoiceNo}</b><br>
+                <span>Date: ${new Date().toLocaleString()}</span><br>
+                <span>Customer: <b>${document.getElementById("customer").value || 'Cash'}</b></span><br>
+                <span>Payment: <b>${document.getElementById("payment").value}</b></span>
+            </div>
+        </div>
+        
+        <hr style="border: 0; border-top: 2px solid #f1f5f9; margin: 15px 0;">
 
-    // Items Table
-    html += `<table style="width:100%; font-size:12px; border-collapse:collapse;">
-                <tr style="border-bottom:1px solid #eee;">
-                    <th style="text-align:left;">Item</th>
-                    <th>Qty</th>
-                    <th style="text-align:right;">Total</th>
-                </tr>`;
-    
-    items.forEach(i => {
-        html += `<tr>
-                    <td>${i.p} ${isGst ? '<br><small>(Tax '+i.gstP+'%)</small>' : ''}</td>
-                    <td style="text-align:center;">${i.q}</td>
-                    <td style="text-align:right;">${i.t.toFixed(2)}</td>
-                 </tr>`;
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #cbd5e1;">
+            <thead>
+                <tr style="background: #f8fafc; color: #475569;">
+                    <th style="padding: 10px; border: 1px solid #cbd5e1;">No</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: left;">Item</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1;">Qty</th>
+                    <th style="padding: 10px; border: 1px solid #cbd5e1;">Price</th>
+                    ${isGst ? `<th style="padding: 10px; border: 1px solid #cbd5e1;">Tax%</th>` : ''}
+                    <th style="padding: 10px; border: 1px solid #cbd5e1;">Total</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    items.forEach((i, idx) => {
+        html += `
+            <tr style="text-align: center;">
+                <td style="padding: 8px; border: 1px solid #cbd5e1;">${idx + 1}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">${i.p}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1;">${i.q}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${i.pr}</td>
+                ${isGst ? `<td style="padding: 8px; border: 1px solid #cbd5e1;">${i.gstP}%</td>` : ''}
+                <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: 500;">₹${i.t.toFixed(2)}</td>
+            </tr>`;
     });
-    html += `</table><hr>`;
 
-    // Totals & GST Breakdown
-    html += `<div style="text-align:right; font-size:13px;">`;
-    if(isGst && totalGst > 0) {
-        html += `Taxable Value: ₹${totalTaxable.toFixed(2)}<br>`;
-        html += `CGST (${(totalGst > 0 ? '9%' : '0%')}): ₹${(totalGst/2).toFixed(2)}<br>`; // Example half logic
-        html += `SGST (${(totalGst > 0 ? '9%' : '0%')}): ₹${(totalGst/2).toFixed(2)}<br>`;
-    }
-    html += `<b style="font-size:16px;">Grand Total: ₹${grandTotal.toFixed(2)}</b><br>`;
-    html += `Paid: ₹${paid.toFixed(2)}<hr></div>`;
-    
-    html += `<div style="text-align:center;"><small>Thank You! Visit Again</small></div>`;
+    html += `</tbody>
+            <tfoot>
+                <tr style="font-weight: bold; background: #f8fafc; font-size: 14px;">
+                    <td colspan="${isGst ? 5 : 4}" style="padding: 10px; border: 1px solid #cbd5e1; text-align: right;">Grand Total</td>
+                    <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: center; color: #1e293b;">₹${grandTotal.toFixed(2)}</td>
+                </tr>
+                ${isGst && totalGst > 0 ? `
+                <tr style="font-weight: bold; color: #64748b; font-size: 11px;">
+                    <td colspan="${isGst ? 5 : 4}" style="padding: 5px; border: 1px solid #cbd5e1; text-align: right;">CGST & SGST Split (50/50)</td>
+                    <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: center;">₹${(totalGst/2).toFixed(2)} + ₹${(totalGst/2).toFixed(2)}</td>
+                </tr>` : ''}
+                <tr style="font-weight: bold; color: #16a34a;">
+                    <td colspan="${isGst ? 5 : 4}" style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Paid Amount</td>
+                    <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: center;">₹${paid.toFixed(2)}</td>
+                </tr>
+                <tr style="font-weight: bold; color: #dc2626; display: ${unpaid > 0 ? 'table-row' : 'none'};">
+                    <td colspan="${isGst ? 5 : 4}" style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Unpaid Balance</td>
+                    <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: center;">₹${unpaid.toFixed(2)}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div style="margin-top: 20px; text-align: center; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 15px; background: #f8fafc;">
+            <b style="font-size: 14px; color: #1e293b; display: block; margin-bottom: 10px;">Scan to Pay: ₹${grandTotal.toFixed(2)}</b>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent('upi://pay?pa=' + upiId + '&am=' + grandTotal + '&tn=Inv-' + invoiceNo)}" 
+                 style="width: 140px; height: 140px; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" 
+                 alt="Payment QR">
+            <div style="margin-top: 10px; font-size: 10px; color: #94a3b8;">Thank you for your business!</div>
+        </div>
+    </div>`;
 
     bill.innerHTML = html;
     
-    // Reset for next bill
+    // Cleanup for next entry
     items = []; 
     document.getElementById("tableBody").innerHTML = ""; 
     liveTotal = 0; 
     document.getElementById("liveCurrentTotal").innerText = "0";
+    if(typeof renderStock === "function") renderStock(); 
 });
 
     loadShopDisplay();
